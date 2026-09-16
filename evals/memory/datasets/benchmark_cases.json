@@ -1,0 +1,165 @@
+{
+  "dataset_id": "dayfold-memory-extraction-v0.1",
+  "language": "zh-CN",
+  "data_class": "人工编写的虚构测试数据",
+  "decision": "比较 Doubao-Seed-2.1-Turbo 与 Doubao-Seed-2.0-Mini，选择 Dayfold 首版 Memory Extraction 模型",
+  "thresholds": {
+    "average_score_pass": 85,
+    "average_score_warn": 80,
+    "json_success_rate_pass": 0.95,
+    "critical_cases_must_pass": [
+      "N02",
+      "N03",
+      "D01"
+    ],
+    "critical_case_min_score": 90,
+    "latency_p95_ms_warn": 30000,
+    "output_tokens_p95_warn": 400
+  },
+  "cases": [
+    {
+      "id": "G01",
+      "slice": "explicit_goal",
+      "critical": false,
+      "context": "",
+      "input": "我决定今年十二月参加英语六级考试，每周至少复习四次。",
+      "expected_action": "upsert",
+      "expected_types": ["goal"],
+      "required_term_groups": [["六级"], ["十二月", "12月"]],
+      "min_memories": 1,
+      "max_memories": 2
+    },
+    {
+      "id": "I01",
+      "slice": "stable_interest",
+      "critical": false,
+      "context": "",
+      "input": "我连续三个月都在学习胶片摄影，尤其喜欢拍城市夜景。",
+      "expected_action": "upsert",
+      "expected_types": ["interest"],
+      "required_term_groups": [["胶片摄影", "摄影"], ["城市夜景", "夜景"]],
+      "min_memories": 1,
+      "max_memories": 2
+    },
+    {
+      "id": "E01",
+      "slice": "significant_event",
+      "critical": false,
+      "context": "",
+      "input": "我上周从南京搬到了杭州，现在住在西湖区。",
+      "expected_action": "upsert",
+      "expected_types": ["event"],
+      "required_term_groups": [["搬到", "搬家"], ["杭州"]],
+      "min_memories": 1,
+      "max_memories": 2
+    },
+    {
+      "id": "N01",
+      "slice": "transient_detail",
+      "critical": false,
+      "context": "",
+      "input": "今天午饭的汤有点咸，下午还下了十分钟小雨。",
+      "expected_action": "none",
+      "expected_types": [],
+      "required_term_groups": [],
+      "min_memories": 0,
+      "max_memories": 0
+    },
+    {
+      "id": "N02",
+      "slice": "credential_rejection",
+      "critical": true,
+      "context": "",
+      "input": "我的快递取件码是 684219，等会儿提醒我去拿。",
+      "expected_action": "none",
+      "expected_types": [],
+      "required_term_groups": [],
+      "min_memories": 0,
+      "max_memories": 0
+    },
+    {
+      "id": "N03",
+      "slice": "third_party_rejection",
+      "critical": true,
+      "context": "",
+      "input": "我的室友小林正在准备教师资格证，她计划明年去成都工作。",
+      "expected_action": "none",
+      "expected_types": [],
+      "required_term_groups": [],
+      "min_memories": 0,
+      "max_memories": 0
+    },
+    {
+      "id": "U01",
+      "slice": "goal_update",
+      "critical": false,
+      "context": "已有记忆：用户计划明年参加研究生考试。",
+      "input": "我认真考虑后决定不考研了，毕业后直接找市场研究相关的工作。",
+      "expected_action": "upsert",
+      "expected_types": ["goal"],
+      "required_term_groups": [["不考研", "放弃考研"], ["市场研究", "找工作", "就业"]],
+      "min_memories": 1,
+      "max_memories": 2
+    },
+    {
+      "id": "U02",
+      "slice": "interest_retirement",
+      "critical": false,
+      "context": "已有记忆：用户长期坚持跑步，并把跑步视为主要兴趣。",
+      "input": "膝盖受伤后我已经决定不再跑步，请把跑步从我的兴趣里去掉。",
+      "expected_action": "delete",
+      "expected_types": ["interest"],
+      "required_term_groups": [["跑步"]],
+      "min_memories": 1,
+      "max_memories": 1
+    },
+    {
+      "id": "D01",
+      "slice": "explicit_deletion",
+      "critical": true,
+      "context": "已有记忆：用户准备参加研究生考试。",
+      "input": "请忘记我准备考研这件事，以后不要再根据它给建议。",
+      "expected_action": "delete",
+      "expected_types": ["goal"],
+      "required_term_groups": [["考研", "研究生考试"]],
+      "min_memories": 1,
+      "max_memories": 1
+    },
+    {
+      "id": "T01",
+      "slice": "tentative_idea",
+      "critical": false,
+      "context": "",
+      "input": "我也许明年会学法语，不过现在只是随便想想，还没有决定。",
+      "expected_action": "none",
+      "expected_types": [],
+      "required_term_groups": [],
+      "min_memories": 0,
+      "max_memories": 0
+    },
+    {
+      "id": "M01",
+      "slice": "multiple_memories",
+      "critical": false,
+      "context": "",
+      "input": "我昨天正式加入了学校摄影社，并计划在年底前完成一套城市主题作品集。",
+      "expected_action": "upsert",
+      "expected_types": ["event", "goal"],
+      "required_term_groups": [["摄影社"], ["作品集"]],
+      "min_memories": 2,
+      "max_memories": 2
+    },
+    {
+      "id": "C01",
+      "slice": "conflicting_location",
+      "critical": false,
+      "context": "已有记忆：用户目前居住在上海。",
+      "input": "我已经结束上海的实习并搬到北京，现在会长期住在海淀区。",
+      "expected_action": "upsert",
+      "expected_types": ["event"],
+      "required_term_groups": [["搬到", "居住"], ["北京", "海淀"]],
+      "min_memories": 1,
+      "max_memories": 2
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "dataset_id": "dayfold-memory-pipeline-v0.3",
+  "extends": "mini_retest_cases_v0.2.json",
+  "decision": "验证短暂情绪过滤和同主题合并修正后，Doubao-Seed-2.0-Mini 是否可以冻结为 Dayfold Memory Extraction 模型",
+  "thresholds": {
+    "model_average_score_pass": 90,
+    "json_success_rate_pass": 1.0,
+    "critical_case_min_score": 90,
+    "deterministic_delete_success_rate_pass": 1.0,
+    "latency_p95_ms_warn": 20000,
+    "output_tokens_p95_warn": 400
+  },
+  "additional_cases": [
+    {
+      "id": "H05",
+      "slice": "heldout_transient_fatigue",
+      "route": "model",
+      "critical": true,
+      "existing_memories": [],
+      "input": "昨晚没睡好，今天上午有点困，不过午睡后已经恢复了。",
+      "expected_ops": [],
+      "expected_types": [],
+      "expected_target_ids": [],
+      "required_term_groups": [],
+      "forbidden_terms": [],
+      "min_operations": 0,
+      "max_operations": 0
+    },
+    {
+      "id": "H06",
+      "slice": "heldout_transient_frustration",
+      "route": "model",
+      "critical": true,
+      "existing_memories": [],
+      "input": "刚才排队等车时有点烦躁，现在已经没事了。",
+      "expected_ops": [],
+      "expected_types": [],
+      "expected_target_ids": [],
+      "required_term_groups": [],
+      "forbidden_terms": [],
+      "min_operations": 0,
+      "max_operations": 0
+    },
+    {
+      "id": "H07",
+      "slice": "heldout_interest_merge",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "过去四个月我一直在练习手冲咖啡，现在最喜欢浅烘焙豆的花果香。",
+      "expected_ops": ["upsert"],
+      "expected_types": ["interest"],
+      "expected_target_ids": [],
+      "required_term_groups": [["手冲咖啡", "咖啡"], ["浅烘焙", "花果香"]],
+      "forbidden_terms": [],
+      "min_operations": 1,
+      "max_operations": 1
+    },
+    {
+      "id": "H08",
+      "slice": "heldout_relocation_merge",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "我上个月从广州搬到了深圳，目前会长期住在南山区。",
+      "expected_ops": ["upsert"],
+      "expected_types": ["event"],
+      "expected_target_ids": [],
+      "required_term_groups": [["搬到", "搬家"], ["深圳"], ["南山"]],
+      "forbidden_terms": [],
+      "min_operations": 1,
+      "max_operations": 1
+    }
+  ]
+}

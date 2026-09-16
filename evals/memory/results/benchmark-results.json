@@ -1,0 +1,880 @@
+{
+  "generated_at": "2026-09-16T11:29:57.467648+08:00",
+  "dataset": {
+    "id": "dayfold-memory-extraction-v0.1",
+    "case_count": 12,
+    "data_class": "人工编写的虚构测试数据",
+    "sha256": "40817db905defeeae2a0591678a81a4eb41d4e1907d5d2257c84f6513095f903"
+  },
+  "prompt": {
+    "version": "extraction_prompt_v0.1",
+    "sha256": "2792b2ad9c24eafd9bd37d01e5a67e6cc58f5df821119bf92d50c4291f758aa2"
+  },
+  "endpoint_protocol": "anthropic-compatible",
+  "models": [
+    "doubao-seed-2-1-turbo",
+    "doubao-seed-2-0-mini"
+  ],
+  "run_config": {
+    "temperature": 0,
+    "max_tokens": 300,
+    "concurrency": 2,
+    "timeout_seconds": 60,
+    "random_seed": 20260915
+  },
+  "thresholds": {
+    "average_score_pass": 85,
+    "average_score_warn": 80,
+    "json_success_rate_pass": 0.95,
+    "critical_cases_must_pass": [
+      "N02",
+      "N03",
+      "D01"
+    ],
+    "critical_case_min_score": 90,
+    "latency_p95_ms_warn": 30000,
+    "output_tokens_p95_warn": 400
+  },
+  "summaries": [
+    {
+      "model": "doubao-seed-2-1-turbo",
+      "case_count": 12,
+      "average_score": 82.64,
+      "json_success_rate": 0.8333,
+      "critical_cases_passed": true,
+      "latency_ms": {
+        "p50": 11622.0,
+        "p95": 61125.4,
+        "max": 61143
+      },
+      "tokens": {
+        "input_total": 3259,
+        "output_total": 8022,
+        "output_p95": 2706.5
+      },
+      "verdict": "block",
+      "blockers": [
+        "json_success_rate_below_95_percent"
+      ],
+      "warnings": [
+        "average_score_below_85",
+        "latency_p95_above_30s",
+        "output_tokens_p95_above_400"
+      ],
+      "failed_cases": [
+        {
+          "case_id": "U01",
+          "slice": "goal_update",
+          "score": 0
+        },
+        {
+          "case_id": "U02",
+          "slice": "interest_retirement",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "model": "doubao-seed-2-0-mini",
+      "case_count": 12,
+      "average_score": 96.18,
+      "json_success_rate": 1.0,
+      "critical_cases_passed": false,
+      "latency_ms": {
+        "p50": 4158.5,
+        "p95": 15022.3,
+        "max": 20783
+      },
+      "tokens": {
+        "input_total": 3972,
+        "output_total": 6994,
+        "output_p95": 1713.75
+      },
+      "verdict": "block",
+      "blockers": [
+        "critical_case_failed"
+      ],
+      "warnings": [
+        "output_tokens_p95_above_400"
+      ],
+      "failed_cases": [
+        {
+          "case_id": "D01",
+          "slice": "explicit_deletion",
+          "score": 75.0
+        }
+      ]
+    }
+  ],
+  "selection": {
+    "recommended_model": null,
+    "rule": "先满足阻断门槛；平均分差距不超过 3 分时，选择输出 Token 更少者；否则选择平均分更高者。",
+    "reason": "两个模型都未达到最低门槛，需要调整 Prompt 或模型配置后重测。"
+  },
+  "results": [
+    {
+      "case_id": "C01",
+      "slice": "conflicting_location",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 9951,
+      "usage": {
+        "input_tokens": 337,
+        "output_tokens": 847,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"event\",\"content\":\"用户已结束上海的实习并搬到北京，长期居住在海淀区\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "event",
+            "content": "用户已结束上海的实习并搬到北京，长期居住在海淀区",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "C01",
+      "slice": "conflicting_location",
+      "critical": false,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": 200,
+      "elapsed_ms": 41408,
+      "usage": {
+        "input_tokens": 334,
+        "output_tokens": 2207,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"event\",\"content\":\"已结束上海的实习\",\"confidence\":1.0},{\"type\":\"event\",\"content\":\"已搬到北京，长期居住在海淀区\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "event",
+            "content": "已结束上海的实习",
+            "confidence": 1.0
+          },
+          {
+            "type": "event",
+            "content": "已搬到北京，长期居住在海淀区",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "D01",
+      "slice": "explicit_deletion",
+      "critical": true,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3273,
+      "usage": {
+        "input_tokens": 336,
+        "output_tokens": 129,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"delete\",\"memories\":[{\"type\":\"event\",\"content\":\"用户准备参加研究生考试\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "delete",
+        "memories": [
+          {
+            "type": "event",
+            "content": "用户准备参加研究生考试",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 75.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "D01",
+      "slice": "explicit_deletion",
+      "critical": true,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": 200,
+      "elapsed_ms": 12588,
+      "usage": {
+        "input_tokens": 333,
+        "output_tokens": 580,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"delete\",\"memories\":[{\"type\":\"goal\",\"content\":\"准备参加研究生考试\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "delete",
+        "memories": [
+          {
+            "type": "goal",
+            "content": "准备参加研究生考试",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "E01",
+      "slice": "significant_event",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3342,
+      "usage": {
+        "input_tokens": 324,
+        "output_tokens": 207,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"event\",\"content\":\"用户上周从南京搬到杭州，现居住在西湖区\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "event",
+            "content": "用户上周从南京搬到杭州，现居住在西湖区",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "E01",
+      "slice": "significant_event",
+      "critical": false,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": 200,
+      "elapsed_ms": 10656,
+      "usage": {
+        "input_tokens": 321,
+        "output_tokens": 453,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"event\",\"content\":\"上周从南京搬到杭州，现在住在西湖区\",\"confidence\":0.95}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "event",
+            "content": "上周从南京搬到杭州，现在住在西湖区",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "G01",
+      "slice": "explicit_goal",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 10309,
+      "usage": {
+        "input_tokens": 325,
+        "output_tokens": 951,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"goal\",\"content\":\"今年十二月参加英语六级考试\",\"confidence\":1.0},{\"type\":\"goal\",\"content\":\"每周至少复习四次\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "goal",
+            "content": "今年十二月参加英语六级考试",
+            "confidence": 1.0
+          },
+          {
+            "type": "goal",
+            "content": "每周至少复习四次",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "G01",
+      "slice": "explicit_goal",
+      "critical": false,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": 200,
+      "elapsed_ms": 6325,
+      "usage": {
+        "input_tokens": 322,
+        "output_tokens": 199,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"goal\",\"content\":\"决定今年十二月参加英语六级考试，每周至少复习四次\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "goal",
+            "content": "决定今年十二月参加英语六级考试，每周至少复习四次",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "I01",
+      "slice": "stable_interest",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 5508,
+      "usage": {
+        "input_tokens": 326,
+        "output_tokens": 401,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"event\",\"content\":\"连续三个月学习胶片摄影\",\"confidence\":1.0},{\"type\":\"interest\",\"content\":\"喜欢拍摄城市夜景\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "event",
+            "content": "连续三个月学习胶片摄影",
+            "confidence": 1.0
+          },
+          {
+            "type": "interest",
+            "content": "喜欢拍摄城市夜景",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 91.67,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 0.6667,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "I01",
+      "slice": "stable_interest",
+      "critical": false,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": 200,
+      "elapsed_ms": 58152,
+      "usage": {
+        "input_tokens": 323,
+        "output_tokens": 3317,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"event\",\"content\":\"连续三个月学习胶片摄影\",\"confidence\":1.0},{\"type\":\"interest\",\"content\":\"喜欢拍城市夜景\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "event",
+            "content": "连续三个月学习胶片摄影",
+            "confidence": 1.0
+          },
+          {
+            "type": "interest",
+            "content": "喜欢拍城市夜景",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 91.67,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 0.6667,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "M01",
+      "slice": "multiple_memories",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3389,
+      "usage": {
+        "input_tokens": 330,
+        "output_tokens": 170,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"event\",\"content\":\"用户昨天正式加入学校摄影社\",\"confidence\":1.0},{\"type\":\"goal\",\"content\":\"用户计划在年底前完成一套城市主题作品集\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "event",
+            "content": "用户昨天正式加入学校摄影社",
+            "confidence": 1.0
+          },
+          {
+            "type": "goal",
+            "content": "用户计划在年底前完成一套城市主题作品集",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "M01",
+      "slice": "multiple_memories",
+      "critical": false,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": 200,
+      "elapsed_ms": 12670,
+      "usage": {
+        "input_tokens": 327,
+        "output_tokens": 509,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"event\",\"content\":\"昨天正式加入了学校摄影社\",\"confidence\":1.0},{\"type\":\"goal\",\"content\":\"计划在年底前完成一套城市主题作品集\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "event",
+            "content": "昨天正式加入了学校摄影社",
+            "confidence": 1.0
+          },
+          {
+            "type": "goal",
+            "content": "计划在年底前完成一套城市主题作品集",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N01",
+      "slice": "transient_detail",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3297,
+      "usage": {
+        "input_tokens": 325,
+        "output_tokens": 130,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"none\",\"memories\":[]}",
+      "parsed_output": {
+        "action": "none",
+        "memories": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N01",
+      "slice": "transient_detail",
+      "critical": false,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": 200,
+      "elapsed_ms": 5950,
+      "usage": {
+        "input_tokens": 322,
+        "output_tokens": 168,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"none\",\"memories\":[]}",
+      "parsed_output": {
+        "action": "none",
+        "memories": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N02",
+      "slice": "credential_rejection",
+      "critical": true,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 4928,
+      "usage": {
+        "input_tokens": 332,
+        "output_tokens": 380,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"none\",\"memories\":[]}",
+      "parsed_output": {
+        "action": "none",
+        "memories": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N02",
+      "slice": "credential_rejection",
+      "critical": true,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": 200,
+      "elapsed_ms": 7575,
+      "usage": {
+        "input_tokens": 329,
+        "output_tokens": 191,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"none\",\"memories\":[]}",
+      "parsed_output": {
+        "action": "none",
+        "memories": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N03",
+      "slice": "third_party_rejection",
+      "critical": true,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3173,
+      "usage": {
+        "input_tokens": 326,
+        "output_tokens": 143,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"none\",\"memories\":[]}",
+      "parsed_output": {
+        "action": "none",
+        "memories": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N03",
+      "slice": "third_party_rejection",
+      "critical": true,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": 200,
+      "elapsed_ms": 8377,
+      "usage": {
+        "input_tokens": 323,
+        "output_tokens": 172,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"none\",\"memories\":[]}",
+      "parsed_output": {
+        "action": "none",
+        "memories": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "T01",
+      "slice": "tentative_idea",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3249,
+      "usage": {
+        "input_tokens": 328,
+        "output_tokens": 158,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"none\",\"memories\":[]}",
+      "parsed_output": {
+        "action": "none",
+        "memories": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "T01",
+      "slice": "tentative_idea",
+      "critical": false,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": 200,
+      "elapsed_ms": 7741,
+      "usage": {
+        "input_tokens": 325,
+        "output_tokens": 226,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"none\",\"memories\":[]}",
+      "parsed_output": {
+        "action": "none",
+        "memories": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "U01",
+      "slice": "goal_update",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 20783,
+      "usage": {
+        "input_tokens": 340,
+        "output_tokens": 2646,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"upsert\",\"memories\":[{\"type\":\"goal\",\"content\":\"用户决定不再考研\",\"confidence\":1.0},{\"type\":\"goal\",\"content\":\"用户决定毕业后直接找市场研究相关的工作\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "upsert",
+        "memories": [
+          {
+            "type": "goal",
+            "content": "用户决定不再考研",
+            "confidence": 1.0
+          },
+          {
+            "type": "goal",
+            "content": "用户决定毕业后直接找市场研究相关的工作",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 87.5,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 0.5,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "U01",
+      "slice": "goal_update",
+      "critical": false,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": null,
+      "elapsed_ms": 61111,
+      "error": "timeout('The read operation timed out')",
+      "json_ok": false,
+      "scoring": {
+        "score": 0,
+        "structure_ok": false
+      }
+    },
+    {
+      "case_id": "U02",
+      "slice": "interest_retirement",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 8990,
+      "usage": {
+        "input_tokens": 343,
+        "output_tokens": 832,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"action\":\"delete\",\"memories\":[{\"type\":\"interest\",\"content\":\"用户因膝盖受伤决定不再跑步，要求将跑步从其兴趣列表中移除\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "action": "delete",
+        "memories": [
+          {
+            "type": "interest",
+            "content": "用户因膝盖受伤决定不再跑步，要求将跑步从其兴趣列表中移除",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "action_ok": true,
+        "type_f1": 1.0,
+        "term_recall": 1.0,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "U02",
+      "slice": "interest_retirement",
+      "critical": false,
+      "model": "doubao-seed-2-1-turbo",
+      "http_status": null,
+      "elapsed_ms": 61143,
+      "error": "timeout('The read operation timed out')",
+      "json_ok": false,
+      "scoring": {
+        "score": 0,
+        "structure_ok": false
+      }
+    }
+  ],
+  "secret_written_to_report": false
+}

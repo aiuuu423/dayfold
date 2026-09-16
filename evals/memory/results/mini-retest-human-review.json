@@ -1,0 +1,54 @@
+{
+  "reviewed_at": "2026-09-16",
+  "review_scope": "dayfold-memory-pipeline-v0.2",
+  "automatic_verdict": "block",
+  "human_review_verdict": "block_with_one_true_quality_failure",
+  "release_decision": "不得冻结为生产提取模型；保留 Mini 为唯一候选，修正短暂状态过滤和同主题合并后执行 v0.3 复测",
+  "findings": [
+    {
+      "case_id": "H01",
+      "severity": "blocker",
+      "classification": "真实模型错误",
+      "finding": "模型将当天会议中的短暂紧张及恢复过程写成长期 event，违反不保存短暂情绪的规则。",
+      "consequence": "长期记忆会积累低价值状态，污染后续检索和个性化判断。",
+      "remedy": "在 Prompt 中加入短暂情绪反例，并在候选写入前增加 durability 检查；同类留出案例必须全部通过。"
+    },
+    {
+      "case_id": "C01",
+      "severity": "warning",
+      "classification": "过度拆分",
+      "finding": "模型正确归档上海旧地点并提取北京、海淀新事实，但把同一次迁移拆成两个 event。",
+      "consequence": "同一事件可能形成重复向量和冗余召回，但没有产生事实错误或错误归档。",
+      "remedy": "明确同一时间、地点迁移和居住结果应合并为一个原子记忆，并在写入前执行同源候选合并。"
+    },
+    {
+      "case_id": "I01",
+      "severity": "warning",
+      "classification": "过度拆分",
+      "finding": "模型已把摄影学习与夜景偏好都正确归为 interest，但拆成两条同主题兴趣。",
+      "consequence": "兴趣图谱可能出现胶片摄影与夜景摄影的重复节点。",
+      "remedy": "加入同主题合并规则：同一句中围绕同一兴趣对象的行为与偏好合并为一条 memory。"
+    }
+  ],
+  "confirmed_passes": [
+    "14 个模型案例全部返回合法 JSON",
+    "验证码拒绝记忆通过",
+    "纯第三方信息拒绝记忆通过",
+    "混合所有权案例只保留用户本人目标",
+    "明确删除旁路 2/2 通过",
+    "旧考研目标归档并写入新就业目标通过",
+    "上海旧地点归档并写入北京新地点通过"
+  ],
+  "performance": {
+    "p50_latency_ms": 5159.5,
+    "p95_latency_ms": 15558.65,
+    "max_latency_ms": 20108,
+    "output_tokens_p95": 1473.5,
+    "token_warning": "usage 与可见 JSON 长度不成比例，需继续核对推理 Token 和 Agent Plan AFP 口径"
+  },
+  "dify_timing": {
+    "configure_now": false,
+    "recommended_time": "Mini v0.3 通过真实阻断案例后、P1 最终冻结前",
+    "reason": "先固定 Dayfold 自有 Prompt、operations 契约和评分口径，再用 Dify + 硅基流动运行同一数据集，才能形成可归因的独立 baseline。"
+  }
+}

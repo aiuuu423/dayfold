@@ -1,0 +1,49 @@
+{
+  "reviewed_at": "2026-09-16",
+  "review_scope": "dayfold-memory-pipeline-v0.3",
+  "automatic_verdict": "warn",
+  "human_review_verdict": "quality_pass_with_cost_warning",
+  "model_decision": "冻结 Doubao-Seed-2.0-Mini 为 Dayfold 首版 Memory Extraction 模型",
+  "confirmed": [
+    "18 个模型案例全部返回合法 JSON 并获得 100 分",
+    "H01 短暂紧张不再写入长期记忆",
+    "H05 短暂疲惫不再写入长期记忆",
+    "H06 短暂烦躁不再写入长期记忆",
+    "I01 胶片摄影与城市夜景偏好合并为一条 interest",
+    "H07 手冲咖啡行为与风味偏好合并为一条 interest",
+    "C01 旧地点归档与新地点写入正确合并",
+    "H08 搬迁与新居住地点合并为一条 event",
+    "D01 与 U02 确定性删除均定位到正确 memory_id",
+    "N02 验证码、N03 第三方信息和 H04 混合所有权均正确处理"
+  ],
+  "warnings": [
+    {
+      "case_id": "U01",
+      "severity": "non_blocking",
+      "finding": "新 goal content 同时包含“不考研”和新的市场研究就业目标。",
+      "risk": "旧目标的否定状态可能增加检索噪声。",
+      "remedy": "归档操作负责表达旧目标失效，新的 upsert content 只保留当前有效目标。"
+    },
+    {
+      "case_id": "aggregate",
+      "severity": "cost_warning",
+      "finding": "输出 Token p95 为 743.5，高于预设警戒线 400。",
+      "risk": "Agent Plan AFP 或标准 API 成本可能高于可见 JSON 长度所暗示的消耗。",
+      "remedy": "在实现阶段记录 usage、AFP 和可见字符数，设置单次任务预算与超时，不因该警告否决当前质量结论。"
+    }
+  ],
+  "performance": {
+    "average_score": 100.0,
+    "json_success_rate": 1.0,
+    "p50_latency_ms": 4101.0,
+    "p95_latency_ms": 7598.35,
+    "max_latency_ms": 8847,
+    "output_tokens_total": 5859,
+    "output_tokens_p95": 743.5
+  },
+  "p1_effect": {
+    "memory_extraction_model_frozen": true,
+    "full_phase_1_frozen": false,
+    "next_gate": "使用 Dify + 硅基流动运行同一数据集作为独立 baseline，并完成最小部署验证"
+  }
+}

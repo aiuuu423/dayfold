@@ -1,0 +1,12 @@
+{
+  "workspace": "dayfold",
+  "source_workspace": "Personal Aesthetic OS",
+  "copy_strategy": "copy_then_verify_keep_source_backup",
+  "git_excluded": [
+    "local/",
+    "archive/",
+    "*.log",
+    ".env*"
+  ],
+  "secret_scan": "passed"
+}

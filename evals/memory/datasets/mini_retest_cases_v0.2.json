@@ -1,0 +1,270 @@
+{
+  "dataset_id": "dayfold-memory-pipeline-v0.2",
+  "language": "zh-CN",
+  "data_class": "人工定义预期结果的虚构测试数据",
+  "decision": "验证 Doubao-Seed-2.0-Mini 在删除旁路和 operations 输出契约下是否可冻结为 Dayfold Memory Extraction 模型",
+  "thresholds": {
+    "model_average_score_pass": 90,
+    "json_success_rate_pass": 1.0,
+    "critical_case_min_score": 90,
+    "deterministic_delete_success_rate_pass": 1.0,
+    "latency_p95_ms_warn": 20000,
+    "output_tokens_p95_warn": 400
+  },
+  "cases": [
+    {
+      "id": "G01",
+      "slice": "explicit_goal",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "我决定今年十二月参加英语六级考试，每周至少复习四次。",
+      "expected_ops": ["upsert"],
+      "expected_types": ["goal"],
+      "expected_target_ids": [],
+      "required_term_groups": [["六级"], ["十二月", "12月"]],
+      "forbidden_terms": [],
+      "min_operations": 1,
+      "max_operations": 1
+    },
+    {
+      "id": "I01",
+      "slice": "stable_interest",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "我连续三个月都在学习胶片摄影，尤其喜欢拍城市夜景。",
+      "expected_ops": ["upsert"],
+      "expected_types": ["interest"],
+      "expected_target_ids": [],
+      "required_term_groups": [["胶片摄影", "摄影"], ["城市夜景", "夜景"]],
+      "forbidden_terms": [],
+      "min_operations": 1,
+      "max_operations": 1
+    },
+    {
+      "id": "E01",
+      "slice": "significant_event",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "我上周从南京搬到了杭州，现在住在西湖区。",
+      "expected_ops": ["upsert"],
+      "expected_types": ["event"],
+      "expected_target_ids": [],
+      "required_term_groups": [["搬到", "搬家"], ["杭州"]],
+      "forbidden_terms": [],
+      "min_operations": 1,
+      "max_operations": 1
+    },
+    {
+      "id": "N01",
+      "slice": "transient_detail",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "今天午饭的汤有点咸，下午还下了十分钟小雨。",
+      "expected_ops": [],
+      "expected_types": [],
+      "expected_target_ids": [],
+      "required_term_groups": [],
+      "forbidden_terms": [],
+      "min_operations": 0,
+      "max_operations": 0
+    },
+    {
+      "id": "N02",
+      "slice": "credential_rejection",
+      "route": "model",
+      "critical": true,
+      "existing_memories": [],
+      "input": "我的快递取件码是 684219，等会儿提醒我去拿。",
+      "expected_ops": [],
+      "expected_types": [],
+      "expected_target_ids": [],
+      "required_term_groups": [],
+      "forbidden_terms": ["684219"],
+      "min_operations": 0,
+      "max_operations": 0
+    },
+    {
+      "id": "N03",
+      "slice": "third_party_rejection",
+      "route": "model",
+      "critical": true,
+      "existing_memories": [],
+      "input": "我的室友小林正在准备教师资格证，她计划明年去成都工作。",
+      "expected_ops": [],
+      "expected_types": [],
+      "expected_target_ids": [],
+      "required_term_groups": [],
+      "forbidden_terms": ["小林", "教师资格证", "成都"],
+      "min_operations": 0,
+      "max_operations": 0
+    },
+    {
+      "id": "U01",
+      "slice": "goal_replacement",
+      "route": "model",
+      "critical": true,
+      "existing_memories": [
+        {
+          "id": "mem-goal-grad-school",
+          "type": "goal",
+          "content": "用户计划明年参加研究生考试"
+        }
+      ],
+      "input": "我认真考虑后决定不考研了，毕业后直接找市场研究相关的工作。",
+      "expected_ops": ["archive", "upsert"],
+      "expected_types": ["goal"],
+      "expected_target_ids": ["mem-goal-grad-school"],
+      "required_term_groups": [["市场研究"], ["找工作", "就业", "工作"]],
+      "forbidden_terms": [],
+      "min_operations": 2,
+      "max_operations": 2
+    },
+    {
+      "id": "U02",
+      "slice": "interest_deletion",
+      "route": "deterministic_delete",
+      "critical": true,
+      "existing_memories": [
+        {
+          "id": "mem-interest-running",
+          "type": "interest",
+          "content": "用户长期坚持跑步，并把跑步视为主要兴趣"
+        }
+      ],
+      "input": "膝盖受伤后我已经决定不再跑步，请把跑步从我的兴趣里去掉。",
+      "delete_match_terms": ["跑步"],
+      "expected_target_id": "mem-interest-running"
+    },
+    {
+      "id": "D01",
+      "slice": "explicit_deletion",
+      "route": "deterministic_delete",
+      "critical": true,
+      "existing_memories": [
+        {
+          "id": "mem-goal-grad-school",
+          "type": "goal",
+          "content": "用户准备参加研究生考试"
+        }
+      ],
+      "input": "请忘记我准备考研这件事，以后不要再根据它给建议。",
+      "delete_match_terms": ["考研", "研究生考试"],
+      "expected_target_id": "mem-goal-grad-school"
+    },
+    {
+      "id": "T01",
+      "slice": "tentative_idea",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "我也许明年会学法语，不过现在只是随便想想，还没有决定。",
+      "expected_ops": [],
+      "expected_types": [],
+      "expected_target_ids": [],
+      "required_term_groups": [],
+      "forbidden_terms": [],
+      "min_operations": 0,
+      "max_operations": 0
+    },
+    {
+      "id": "M01",
+      "slice": "multiple_memories",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "我昨天正式加入了学校摄影社，并计划在年底前完成一套城市主题作品集。",
+      "expected_ops": ["upsert", "upsert"],
+      "expected_types": ["event", "goal"],
+      "expected_target_ids": [],
+      "required_term_groups": [["摄影社"], ["作品集"]],
+      "forbidden_terms": [],
+      "min_operations": 2,
+      "max_operations": 2
+    },
+    {
+      "id": "C01",
+      "slice": "conflicting_location",
+      "route": "model",
+      "critical": true,
+      "existing_memories": [
+        {
+          "id": "mem-event-shanghai-location",
+          "type": "event",
+          "content": "用户目前居住在上海"
+        }
+      ],
+      "input": "我已经结束上海的实习并搬到北京，现在会长期住在海淀区。",
+      "expected_ops": ["archive", "upsert"],
+      "expected_types": ["event"],
+      "expected_target_ids": ["mem-event-shanghai-location"],
+      "required_term_groups": [["北京"], ["海淀"]],
+      "forbidden_terms": [],
+      "min_operations": 2,
+      "max_operations": 2
+    },
+    {
+      "id": "H01",
+      "slice": "heldout_transient_emotion",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "今天开会时有点紧张，不过散会后就好多了。",
+      "expected_ops": [],
+      "expected_types": [],
+      "expected_target_ids": [],
+      "required_term_groups": [],
+      "forbidden_terms": [],
+      "min_operations": 0,
+      "max_operations": 0
+    },
+    {
+      "id": "H02",
+      "slice": "heldout_stable_preference",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "这半年我越来越确定自己更喜欢读纸质书，电子书通常看不下去。",
+      "expected_ops": ["upsert"],
+      "expected_types": ["interest"],
+      "expected_target_ids": [],
+      "required_term_groups": [["纸质书"]],
+      "forbidden_terms": [],
+      "min_operations": 1,
+      "max_operations": 1
+    },
+    {
+      "id": "H03",
+      "slice": "heldout_achievement_event",
+      "route": "model",
+      "critical": false,
+      "existing_memories": [],
+      "input": "我第一次独立完成的市场调研报告今天通过了导师评审。",
+      "expected_ops": ["upsert"],
+      "expected_types": ["event"],
+      "expected_target_ids": [],
+      "required_term_groups": [["市场调研报告", "调研报告"], ["通过", "评审"]],
+      "forbidden_terms": [],
+      "min_operations": 1,
+      "max_operations": 1
+    },
+    {
+      "id": "H04",
+      "slice": "heldout_mixed_ownership",
+      "route": "model",
+      "critical": true,
+      "existing_memories": [],
+      "input": "室友准备去成都考教师资格证，而我决定申请北京的用户研究实习。",
+      "expected_ops": ["upsert"],
+      "expected_types": ["goal"],
+      "expected_target_ids": [],
+      "required_term_groups": [["北京"], ["用户研究", "实习"]],
+      "forbidden_terms": ["成都", "教师资格证"],
+      "min_operations": 1,
+      "max_operations": 1
+    }
+  ]
+}

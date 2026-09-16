@@ -1,0 +1,801 @@
+{
+  "generated_at": "2026-09-16T14:10:46.529420+08:00",
+  "report_meta": {
+    "title": "Dayfold P1 Mini v0.3 复测报告",
+    "version": "v0.3",
+    "baseline_label": "v0.2",
+    "result_file": "mini-v03-results.json",
+    "baseline_file": "mini-retest-results.json",
+    "dataset_file": "mini_retest_cases_v0.3.json",
+    "prompt_file": "extraction_prompt_v0.3.md"
+  },
+  "dataset": {
+    "id": "dayfold-memory-pipeline-v0.3",
+    "case_count": 20,
+    "model_case_count": 18,
+    "deterministic_delete_case_count": 2,
+    "data_class": "人工定义预期结果的虚构测试数据",
+    "sha256": "36356a3b6344591f9f532ffebbad6e4e2ebcbea0e4e1abc18c1cd3a8654f61c9"
+  },
+  "prompt": {
+    "version": "extraction_prompt_v0.3",
+    "sha256": "055378dcad26ebff0bd5b7a0894edc3293f48bab7178d526c8eda8951436442e"
+  },
+  "model": "doubao-seed-2-0-mini",
+  "endpoint_protocol": "anthropic-compatible",
+  "run_config": {
+    "temperature": 0,
+    "max_tokens": 300,
+    "concurrency": 2,
+    "timeout_seconds": 60,
+    "random_seed": 20260916
+  },
+  "thresholds": {
+    "model_average_score_pass": 90,
+    "json_success_rate_pass": 1.0,
+    "critical_case_min_score": 90,
+    "deterministic_delete_success_rate_pass": 1.0,
+    "latency_p95_ms_warn": 20000,
+    "output_tokens_p95_warn": 400
+  },
+  "summary": {
+    "model_case_count": 18,
+    "deterministic_delete_case_count": 2,
+    "average_score": 100.0,
+    "json_success_rate": 1.0,
+    "critical_model_cases_passed": true,
+    "deterministic_delete_success_rate": 1.0,
+    "latency_ms": {
+      "p50": 4101.0,
+      "p95": 7598.35,
+      "max": 8847
+    },
+    "tokens": {
+      "input_total": 13093,
+      "output_total": 5859,
+      "output_p95": 743.5
+    },
+    "verdict": "warn",
+    "blockers": [],
+    "warnings": [
+      "output_tokens_p95_above_400"
+    ],
+    "failed_model_cases": [],
+    "failed_delete_cases": []
+  },
+  "baseline": {
+    "model_case_count": 14,
+    "deterministic_delete_case_count": 2,
+    "average_score": 94.36,
+    "json_success_rate": 1.0,
+    "critical_model_cases_passed": false,
+    "deterministic_delete_success_rate": 1.0,
+    "latency_ms": {
+      "p50": 5159.5,
+      "p95": 15558.65,
+      "max": 20108
+    },
+    "tokens": {
+      "input_total": 6777,
+      "output_total": 7130,
+      "output_p95": 1473.5
+    },
+    "verdict": "block",
+    "blockers": [
+      "critical_model_case_failed"
+    ],
+    "warnings": [
+      "output_tokens_p95_above_400"
+    ],
+    "failed_model_cases": [
+      {
+        "case_id": "C01",
+        "slice": "conflicting_location",
+        "score": 84.33,
+        "scoring": {
+          "score": 84.33,
+          "structure_ok": true,
+          "operation_f1": 0.8,
+          "type_f1": 0.6667,
+          "target_f1": 1.0,
+          "term_recall": 1.0,
+          "forbidden_ok": true,
+          "count_ok": false
+        }
+      },
+      {
+        "case_id": "H01",
+        "slice": "heldout_transient_emotion",
+        "score": 55.0,
+        "scoring": {
+          "score": 55.0,
+          "structure_ok": true,
+          "operation_f1": 0.0,
+          "type_f1": 0.0,
+          "target_f1": 1.0,
+          "term_recall": 1.0,
+          "forbidden_ok": true,
+          "count_ok": false
+        }
+      },
+      {
+        "case_id": "I01",
+        "slice": "stable_interest",
+        "score": 81.67,
+        "scoring": {
+          "score": 81.67,
+          "structure_ok": true,
+          "operation_f1": 0.6667,
+          "type_f1": 0.6667,
+          "target_f1": 1.0,
+          "term_recall": 1.0,
+          "forbidden_ok": true,
+          "count_ok": false
+        }
+      }
+    ],
+    "failed_delete_cases": []
+  },
+  "model_results": [
+    {
+      "case_id": "C01",
+      "slice": "conflicting_location",
+      "route": "model",
+      "critical": true,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 6619,
+      "usage": {
+        "input_tokens": 747,
+        "output_tokens": 420,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"archive\",\"target_memory_id\":\"mem-event-shanghai-location\",\"reason\":\"用户已结束上海的实习并搬到北京，不再居住在上海，该记忆被新居住事实取代\"},{\"op\":\"upsert\",\"type\":\"event\",\"content\":\"用户结束上海的实习并搬到北京，目前长期住在海淀区\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "archive",
+            "target_memory_id": "mem-event-shanghai-location",
+            "reason": "用户已结束上海的实习并搬到北京，不再居住在上海，该记忆被新居住事实取代"
+          },
+          {
+            "op": "upsert",
+            "type": "event",
+            "content": "用户结束上海的实习并搬到北京，目前长期住在海淀区",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "E01",
+      "slice": "significant_event",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3856,
+      "usage": {
+        "input_tokens": 722,
+        "output_tokens": 268,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"event\",\"content\":\"上周从南京搬到杭州，现居住在西湖区\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "event",
+            "content": "上周从南京搬到杭州，现居住在西湖区",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "G01",
+      "slice": "explicit_goal",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 5965,
+      "usage": {
+        "input_tokens": 723,
+        "output_tokens": 523,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"goal\",\"content\":\"决定今年十二月参加英语六级考试，每周至少复习四次\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "goal",
+            "content": "决定今年十二月参加英语六级考试，每周至少复习四次",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H01",
+      "slice": "heldout_transient_emotion",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3524,
+      "usage": {
+        "input_tokens": 722,
+        "output_tokens": 65,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H02",
+      "slice": "heldout_stable_preference",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3899,
+      "usage": {
+        "input_tokens": 725,
+        "output_tokens": 228,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"interest\",\"content\":\"越来越确定更喜欢读纸质书，电子书通常看不下去\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "interest",
+            "content": "越来越确定更喜欢读纸质书，电子书通常看不下去",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H03",
+      "slice": "heldout_achievement_event",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 6483,
+      "usage": {
+        "input_tokens": 722,
+        "output_tokens": 508,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"event\",\"content\":\"第一次独立完成的市场调研报告通过了导师评审\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "event",
+            "content": "第一次独立完成的市场调研报告通过了导师评审",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H04",
+      "slice": "heldout_mixed_ownership",
+      "route": "model",
+      "critical": true,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 4300,
+      "usage": {
+        "input_tokens": 727,
+        "output_tokens": 281,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"goal\",\"content\":\"决定申请北京的用户研究实习\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "goal",
+            "content": "决定申请北京的用户研究实习",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H05",
+      "slice": "heldout_transient_fatigue",
+      "route": "model",
+      "critical": true,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3081,
+      "usage": {
+        "input_tokens": 726,
+        "output_tokens": 83,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H06",
+      "slice": "heldout_transient_frustration",
+      "route": "model",
+      "critical": true,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3669,
+      "usage": {
+        "input_tokens": 722,
+        "output_tokens": 83,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H07",
+      "slice": "heldout_interest_merge",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 6488,
+      "usage": {
+        "input_tokens": 728,
+        "output_tokens": 598,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"interest\",\"content\":\"过去四个月一直在练习手冲咖啡，现在最喜欢浅烘焙豆的花果香\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "interest",
+            "content": "过去四个月一直在练习手冲咖啡，现在最喜欢浅烘焙豆的花果香",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H08",
+      "slice": "heldout_relocation_merge",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 5757,
+      "usage": {
+        "input_tokens": 724,
+        "output_tokens": 351,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"event\",\"content\":\"上个月从广州搬到深圳，目前长期住在南山区\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "event",
+            "content": "上个月从广州搬到深圳，目前长期住在南山区",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "I01",
+      "slice": "stable_interest",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3883,
+      "usage": {
+        "input_tokens": 724,
+        "output_tokens": 251,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"interest\",\"content\":\"连续三个月学习胶片摄影，尤其喜欢拍摄城市夜景\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "interest",
+            "content": "连续三个月学习胶片摄影，尤其喜欢拍摄城市夜景",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "M01",
+      "slice": "multiple_memories",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 8847,
+      "usage": {
+        "input_tokens": 728,
+        "output_tokens": 786,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"event\",\"content\":\"昨天正式加入了学校摄影社\",\"confidence\":1.0},{\"op\":\"upsert\",\"type\":\"goal\",\"content\":\"计划在年底前完成一套城市主题作品集\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "event",
+            "content": "昨天正式加入了学校摄影社",
+            "confidence": 1.0
+          },
+          {
+            "op": "upsert",
+            "type": "goal",
+            "content": "计划在年底前完成一套城市主题作品集",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N01",
+      "slice": "transient_detail",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3902,
+      "usage": {
+        "input_tokens": 723,
+        "output_tokens": 130,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N02",
+      "slice": "credential_rejection",
+      "route": "model",
+      "critical": true,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 4585,
+      "usage": {
+        "input_tokens": 730,
+        "output_tokens": 353,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N03",
+      "slice": "third_party_rejection",
+      "route": "model",
+      "critical": true,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 2594,
+      "usage": {
+        "input_tokens": 724,
+        "output_tokens": 85,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "T01",
+      "slice": "tentative_idea",
+      "route": "model",
+      "critical": false,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 3326,
+      "usage": {
+        "input_tokens": 726,
+        "output_tokens": 110,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "U01",
+      "slice": "goal_replacement",
+      "route": "model",
+      "critical": true,
+      "model": "doubao-seed-2-0-mini",
+      "http_status": 200,
+      "elapsed_ms": 7378,
+      "usage": {
+        "input_tokens": 750,
+        "output_tokens": 736,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"archive\",\"target_memory_id\":\"mem-goal-grad-school\",\"reason\":\"用户已明确决定不再参加研究生考试，该目标被新的职业规划取代\"},{\"op\":\"upsert\",\"type\":\"goal\",\"content\":\"用户经认真考虑后决定不考研，毕业后直接找市场研究相关的工作\",\"confidence\":1.0}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "archive",
+            "target_memory_id": "mem-goal-grad-school",
+            "reason": "用户已明确决定不再参加研究生考试，该目标被新的职业规划取代"
+          },
+          {
+            "op": "upsert",
+            "type": "goal",
+            "content": "用户经认真考虑后决定不考研，毕业后直接找市场研究相关的工作",
+            "confidence": 1.0
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    }
+  ],
+  "deterministic_delete_results": [
+    {
+      "case_id": "D01",
+      "slice": "explicit_deletion",
+      "route": "deterministic_delete",
+      "critical": true,
+      "elapsed_ms": 0.007,
+      "selected_target_id": "mem-goal-grad-school",
+      "expected_target_id": "mem-goal-grad-school",
+      "candidate_count": 1,
+      "score": 100,
+      "passed": true
+    },
+    {
+      "case_id": "U02",
+      "slice": "interest_deletion",
+      "route": "deterministic_delete",
+      "critical": true,
+      "elapsed_ms": 0.015,
+      "selected_target_id": "mem-interest-running",
+      "expected_target_id": "mem-interest-running",
+      "candidate_count": 1,
+      "score": 100,
+      "passed": true
+    }
+  ],
+  "secret_written_to_report": false
+}

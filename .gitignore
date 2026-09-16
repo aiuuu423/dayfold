@@ -1,0 +1,41 @@
+# macOS
+.DS_Store
+
+# Secrets and environment files
+.env
+.env.*
+!.env.example
+ApiKey.txt
+*apikey*.txt
+*api-key*.txt
+*.pem
+*.key
+credentials*.json
+secrets*.json
+
+# Local-only evidence and archives
+/local/
+/archive/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node / frontend
+node_modules/
+dist/
+.next/
+coverage/
+.pnpm-store/
+
+# Deployment and editors
+.vercel/
+.idea/
+.vscode/
+.trae/
+.superpowers/
