@@ -18,16 +18,17 @@ from pathlib import Path
 
 
 WORKDIR = Path(__file__).resolve().parent
-DATASET_PATH = WORKDIR / os.environ.get(
+EVAL_ROOT = WORKDIR.parent
+DATASET_PATH = EVAL_ROOT / "datasets" / os.environ.get(
     "DAYFOLD_EVAL_DATASET", "mini_retest_cases_v0.2.json"
 )
-PROMPT_PATH = WORKDIR / os.environ.get(
+PROMPT_PATH = EVAL_ROOT / "prompts" / os.environ.get(
     "DAYFOLD_EVAL_PROMPT", "extraction_prompt_v0.2.md"
 )
-BASELINE_PATH = WORKDIR / os.environ.get(
+BASELINE_PATH = EVAL_ROOT / "results" / os.environ.get(
     "DAYFOLD_EVAL_BASELINE", "benchmark-results.json"
 )
-RESULT_PATH = WORKDIR / os.environ.get(
+RESULT_PATH = EVAL_ROOT / "results" / os.environ.get(
     "DAYFOLD_EVAL_RESULT", "mini-retest-results.json"
 )
 REPORT_DIR_NAME = os.environ.get(
@@ -39,12 +40,17 @@ REPORT_TITLE = os.environ.get(
 REPORT_VERSION = os.environ.get("DAYFOLD_EVAL_VERSION", "v0.2")
 BASELINE_LABEL = os.environ.get("DAYFOLD_EVAL_BASELINE_LABEL", "v0.1")
 REPORT_PATH = (
-    WORKDIR
-    / REPORT_DIR_NAME
+    EVAL_ROOT
+    / "reports"
+    / REPORT_VERSION
     / f"{REPORT_DIR_NAME}.html"
 )
-ENDPOINT = "https://ark.cn-beijing.volces.com/api/plan/v1/messages"
-MODEL = "doubao-seed-2-0-mini"
+ENDPOINT = os.environ.get(
+    "DAYFOLD_EVAL_ENDPOINT",
+    "https://ark.cn-beijing.volces.com/api/plan/v1/messages",
+)
+MODEL = os.environ.get("DAYFOLD_EVAL_MODEL", "doubao-seed-2-0-mini")
+PROTOCOL = os.environ.get("DAYFOLD_EVAL_PROTOCOL", "anthropic").lower()
 PRINT_LOCK = threading.Lock()
 
 
@@ -104,6 +110,62 @@ def parse_json_text(text):
     if start >= 0 and end > start:
         cleaned = cleaned[start : end + 1]
     return json.loads(cleaned)
+
+
+def build_provider_request(
+    protocol, api_key, model, system_prompt, user_message
+):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    if protocol == "openai":
+        payload = {
+            "model": model,
+            "max_tokens": 300,
+            "temperature": 0,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+        }
+        return payload, headers
+    if protocol == "anthropic":
+        headers.update(
+            {
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            }
+        )
+        payload = {
+            "model": model,
+            "max_tokens": 300,
+            "temperature": 0,
+            "system": system_prompt,
+            "messages": [{"role": "user", "content": user_message}],
+        }
+        return payload, headers
+    raise ValueError(f"不支持的 Provider 协议：{protocol}")
+
+
+def parse_provider_response(protocol, data):
+    if protocol == "openai":
+        text = data["choices"][0]["message"]["content"]
+        raw_usage = data.get("usage", {})
+        usage = {
+            "input_tokens": raw_usage.get("prompt_tokens", 0),
+            "output_tokens": raw_usage.get("completion_tokens", 0),
+            "total_tokens": raw_usage.get("total_tokens", 0),
+        }
+        return text, usage
+    if protocol == "anthropic":
+        text = "".join(
+            item.get("text", "")
+            for item in data.get("content", [])
+            if isinstance(item, dict) and item.get("type") == "text"
+        )
+        return text, data.get("usage", {})
+    raise ValueError(f"不支持的 Provider 协议：{protocol}")
 
 
 def valid_operation(operation, valid_memory_ids):
@@ -252,22 +314,13 @@ def call_model(api_key, system_prompt, case):
         f"已有记忆：{context}\n"
         f"当前记录：{case['input']}"
     )
-    payload = {
-        "model": MODEL,
-        "max_tokens": 300,
-        "temperature": 0,
-        "system": system_prompt,
-        "messages": [{"role": "user", "content": user_message}],
-    }
+    payload, headers = build_provider_request(
+        PROTOCOL, api_key, MODEL, system_prompt, user_message
+    )
     request = urllib.request.Request(
         ENDPOINT,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "x-api-key": api_key,
-            "Authorization": f"Bearer {api_key}",
-            "anthropic-version": "2023-06-01",
-        },
+        headers=headers,
         method="POST",
     )
     started = time.perf_counter()
@@ -282,16 +335,12 @@ def call_model(api_key, system_prompt, case):
         with urllib.request.urlopen(request, timeout=60) as response:
             raw = response.read().decode("utf-8", errors="replace")
             data = json.loads(raw)
-            text = "".join(
-                item.get("text", "")
-                for item in data.get("content", [])
-                if isinstance(item, dict) and item.get("type") == "text"
-            )
+            text, usage = parse_provider_response(PROTOCOL, data)
             result.update(
                 {
                     "http_status": response.status,
                     "elapsed_ms": round((time.perf_counter() - started) * 1000),
-                    "usage": data.get("usage", {}),
+                    "usage": usage,
                     "raw_output": text,
                 }
             )
@@ -649,7 +698,7 @@ def render_report(report):
     <section id="method">
       <h2>测试口径</h2>
       <div class="feature-list">
-        <div class="feature"><strong>模型路径</strong><span>{summary['model_case_count']} 个新增、归档与拒绝记忆案例调用 <code>doubao-seed-2-0-mini</code>。</span></div>
+        <div class="feature"><strong>模型路径</strong><span>{summary['model_case_count']} 个新增、归档与拒绝记忆案例调用 <code>{html.escape(report['model'])}</code>。</span></div>
         <div class="feature"><strong>删除路径</strong><span>{summary['deterministic_delete_case_count']} 个明确删除案例绕过模型，由已有 Memory ID 与当前用户范围内的确定性匹配处理。</span></div>
         <div class="feature"><strong>输出契约</strong><span><code>operations</code> 支持 <code>upsert</code> 和 <code>archive</code>，解决旧版单一 action 无法表达目标替换的问题。</span></div>
         <div class="feature"><strong>门槛</strong><span>平均分 ≥90、JSON 100%、关键案例 ≥90、确定性删除 100%。性能和 Token 超限记为警告。</span></div>
@@ -695,7 +744,7 @@ def render_report(report):
   </main>
 
   <footer>
-    <p>证据文件：<a href="../{html.escape(report_meta['result_file'])}">本轮脱敏结果</a> · <a href="../{html.escape(report_meta['baseline_file'])}">基线结果</a> · <a href="../{html.escape(report_meta['dataset_file'])}">版本化案例</a> · <a href="../{html.escape(report_meta['prompt_file'])}">版本化 Prompt</a></p>
+    <p>证据文件：<a href="../../results/{html.escape(report_meta['result_file'])}">本轮脱敏结果</a> · <a href="../../results/{html.escape(report_meta['baseline_file'])}">基线结果</a> · <a href="../../datasets/{html.escape(report_meta['dataset_file'])}">版本化案例</a> · <a href="../../prompts/{html.escape(report_meta['prompt_file'])}">版本化 Prompt</a></p>
     <p>静态报告，不包含 API Key、真实用户数据或完整向量。浏览器渲染 QA：NOT RUN。</p>
   </footer>
 </body>
@@ -704,9 +753,14 @@ def render_report(report):
 
 
 def main():
-    api_key = os.environ.get("DAYFOLD_ARK_API_KEY", "").strip()
+    api_key = (
+        os.environ.get("DAYFOLD_EVAL_API_KEY", "")
+        or os.environ.get("DAYFOLD_ARK_API_KEY", "")
+    ).strip()
     if not api_key:
-        raise SystemExit("缺少 DAYFOLD_ARK_API_KEY")
+        raise SystemExit("缺少 DAYFOLD_EVAL_API_KEY")
+    if PROTOCOL not in {"anthropic", "openai"}:
+        raise SystemExit(f"不支持的 DAYFOLD_EVAL_PROTOCOL：{PROTOCOL}")
 
     dataset = load_dataset(DATASET_PATH)
     prompt = PROMPT_PATH.read_text(encoding="utf-8")
@@ -773,7 +827,7 @@ def main():
             "sha256": hashlib.sha256(PROMPT_PATH.read_bytes()).hexdigest(),
         },
         "model": MODEL,
-        "endpoint_protocol": "anthropic-compatible",
+        "endpoint_protocol": f"{PROTOCOL}-compatible",
         "key_fingerprint": hashlib.sha256(api_key.encode()).hexdigest()[:8],
         "run_config": {
             "temperature": 0,
