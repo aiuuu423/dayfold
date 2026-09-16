@@ -143,7 +143,13 @@ python3 -m unittest discover -s evals/memory/tests -v
 - 编写 P2 Technical Specification。
 - 初始化 React/Vite 前端与 FastAPI 模块化后端。
 - 建立 Dayfold without Memory 与 Dayfold with Memory 的消融实验。
-- 在公开前完成仓库级隐私审查、许可证选择和文档校对。
+- 在公开前完成仓库级隐私审查和文档校对。
+
+## 许可证
+
+本仓库采用 [MIT License](LICENSE)。除非文件另有说明，仓库中的原创代码、评测工具、Prompt、虚构数据集和项目文档均按该许可证发布。
+
+许可证不授予任何第三方名称、商标或外部引用材料的权利。引用外部服务和模型名称仅用于说明兼容性与实验配置。
 
 ## 命名说明
 
