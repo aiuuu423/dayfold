@@ -5,6 +5,7 @@
 3. `architecture-review/`：结合中国公网访问与 Agent 评测作品集目标的复审。
 4. `../../evals/memory/reports/v0.3/`：Mini v0.3 质量通过报告。
 5. `dify-baseline-contract.md`：Dify Workflow 输入、输出、数据边界与验收契约。
+6. `dayfold-p1-closeout-roadmap/`：P1 评测收口、剩余阻断与公网发布路线。
 
 当前已冻结的模型分工：
 
