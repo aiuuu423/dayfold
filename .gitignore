@@ -38,4 +38,5 @@ coverage/
 .idea/
 .vscode/
 .trae/
+.trae-html-share-packages/
 .superpowers/

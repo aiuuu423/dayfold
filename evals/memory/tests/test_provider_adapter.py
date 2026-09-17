@@ -7,12 +7,30 @@ from pathlib import Path
 MODULE_PATH = (
     Path(__file__).resolve().parents[1] / "harness" / "run_mini_retest.py"
 )
+SILICONFLOW_COMMAND_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "harness"
+    / "run-siliconflow-v03.command"
+)
 SPEC = importlib.util.spec_from_file_location("run_mini_retest", MODULE_PATH)
 RUNNER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RUNNER)
 
 
 class ProviderAdapterTests(unittest.TestCase):
+    def test_siliconflow_launcher_uses_supported_model(self):
+        command = SILICONFLOW_COMMAND_PATH.read_text(encoding="utf-8")
+
+        self.assertIn(
+            "DAYFOLD_SILICONFLOW_MODEL:-"
+            "deepseek-ai/DeepSeek-V3.1-Terminus",
+            command,
+        )
+        self.assertNotIn(
+            "DAYFOLD_SILICONFLOW_MODEL:-deepseek-ai/DeepSeek-V3.1}",
+            command,
+        )
+
     def test_default_paths_follow_evaluation_directory_layout(self):
         eval_root = MODULE_PATH.parents[1]
 
