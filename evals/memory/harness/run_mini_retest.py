@@ -51,6 +51,11 @@ ENDPOINT = os.environ.get(
 )
 MODEL = os.environ.get("DAYFOLD_EVAL_MODEL", "doubao-seed-2-0-mini")
 PROTOCOL = os.environ.get("DAYFOLD_EVAL_PROTOCOL", "anthropic").lower()
+DIFY_DATASET_VERSION = os.environ.get(
+    "DAYFOLD_DIFY_DATASET_VERSION",
+    "dayfold-memory-pipeline-v0.3",
+)
+DIFY_WORKFLOW_VERSION = os.environ.get("DAYFOLD_DIFY_WORKFLOW_VERSION", "")
 PRINT_LOCK = threading.Lock()
 
 
@@ -166,6 +171,60 @@ def parse_provider_response(protocol, data):
         )
         return text, data.get("usage", {})
     raise ValueError(f"不支持的 Provider 协议：{protocol}")
+
+
+def build_dify_workflow_request(api_key, system_prompt, case):
+    existing_memories_json = json.dumps(
+        case["existing_memories"],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    payload = {
+        "inputs": {
+            "case_id": case["id"],
+            "system_prompt": system_prompt,
+            "existing_memories_json": existing_memories_json,
+            "current_input": case["input"],
+            "dataset_version": DIFY_DATASET_VERSION,
+        },
+        "response_mode": "blocking",
+        "user": "dayfold-p1-eval",
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+        "User-Agent": "Dayfold-P1-Evaluation/0.3",
+    }
+    return payload, headers
+
+
+def parse_dify_workflow_response(data):
+    workflow_data = data.get("data", {})
+    status = workflow_data.get("status")
+    if status and status != "succeeded":
+        error = workflow_data.get("error") or "unknown workflow error"
+        raise ValueError(f"Dify Workflow 未成功：{status}: {error}")
+
+    outputs = workflow_data.get("outputs") or {}
+    result_json = outputs.get("result_json")
+    if not isinstance(result_json, str) or not result_json.strip():
+        raise ValueError("Dify 响应缺少字符串输出 data.outputs.result_json")
+
+    total_tokens = workflow_data.get("total_tokens", 0)
+    usage = {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": total_tokens if isinstance(total_tokens, (int, float)) else 0,
+    }
+    trace = {
+        "task_id": data.get("task_id"),
+        "workflow_run_id": data.get("workflow_run_id"),
+        "workflow_status": status,
+        "workflow_elapsed_seconds": workflow_data.get("elapsed_time"),
+        "total_price": workflow_data.get("total_price"),
+        "currency": workflow_data.get("currency"),
+    }
+    return result_json, usage, trace
 
 
 def valid_operation(operation, valid_memory_ids):
@@ -314,9 +373,20 @@ def call_model(api_key, system_prompt, case):
         f"已有记忆：{context}\n"
         f"当前记录：{case['input']}"
     )
-    payload, headers = build_provider_request(
-        PROTOCOL, api_key, MODEL, system_prompt, user_message
-    )
+    if PROTOCOL == "dify":
+        payload, headers = build_dify_workflow_request(
+            api_key,
+            system_prompt,
+            case,
+        )
+    else:
+        payload, headers = build_provider_request(
+            PROTOCOL,
+            api_key,
+            MODEL,
+            system_prompt,
+            user_message,
+        )
     request = urllib.request.Request(
         ENDPOINT,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -335,7 +405,11 @@ def call_model(api_key, system_prompt, case):
         with urllib.request.urlopen(request, timeout=60) as response:
             raw = response.read().decode("utf-8", errors="replace")
             data = json.loads(raw)
-            text, usage = parse_provider_response(PROTOCOL, data)
+            if PROTOCOL == "dify":
+                text, usage, trace = parse_dify_workflow_response(data)
+                result.update(trace)
+            else:
+                text, usage = parse_provider_response(PROTOCOL, data)
             result.update(
                 {
                     "http_status": response.status,
@@ -402,8 +476,19 @@ def summarize(dataset, model_results, delete_results):
         for item in model_results
         if isinstance(item.get("usage", {}).get("input_tokens", 0), (int, float))
     ]
+    total_tokens = []
+    for item in model_results:
+        usage = item.get("usage", {})
+        total = usage.get("total_tokens")
+        if not isinstance(total, (int, float)):
+            total = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
+        total_tokens.append(total)
     json_rate = (
         sum(1 for item in model_results if item.get("json_ok"))
+        / len(model_results)
+    )
+    http_success_rate = (
+        sum(1 for item in model_results if item.get("http_status") == 200)
         / len(model_results)
     )
     critical_model_results = [
@@ -428,6 +513,8 @@ def summarize(dataset, model_results, delete_results):
     warnings = []
     if average_score < thresholds["model_average_score_pass"]:
         blockers.append("model_average_score_below_90")
+    if http_success_rate < 1:
+        blockers.append("http_success_rate_below_100_percent")
     if json_rate < thresholds["json_success_rate_pass"]:
         blockers.append("json_success_rate_below_100_percent")
     if not critical_model_pass:
@@ -444,6 +531,7 @@ def summarize(dataset, model_results, delete_results):
         "model_case_count": len(model_results),
         "deterministic_delete_case_count": len(delete_results),
         "average_score": round(average_score, 2),
+        "http_success_rate": round(http_success_rate, 4),
         "json_success_rate": round(json_rate, 4),
         "critical_model_cases_passed": critical_model_pass,
         "deterministic_delete_success_rate": round(delete_rate, 4),
@@ -455,6 +543,7 @@ def summarize(dataset, model_results, delete_results):
         "tokens": {
             "input_total": sum(input_tokens),
             "output_total": sum(output_tokens),
+            "total": sum(total_tokens),
             "output_p95": round(output_p95, 2),
         },
         "verdict": verdict,
@@ -476,10 +565,18 @@ def summarize(dataset, model_results, delete_results):
     }
 
 
+def assert_request_success(summary):
+    if summary["http_success_rate"] < 1:
+        raise RuntimeError(
+            "模型请求存在 HTTP 失败；请检查结果文件中的 http_status 与 error"
+        )
+
+
 def render_report(report):
     summary = report["summary"]
     baseline = report.get("baseline", {})
     report_meta = report["report_meta"]
+    is_dify = report.get("endpoint_protocol") == "dify-compatible"
     verdict_labels = {
         "pass": "通过",
         "warn": "有条件通过",
@@ -487,11 +584,18 @@ def render_report(report):
     }
     verdict = summary["verdict"]
     verdict_label = verdict_labels[verdict]
-    conclusion = {
-        "pass": "Mini 已满足 Memory Extraction 的预设发布门槛，可冻结为首版提取模型。",
-        "warn": "Mini 的质量门槛已通过，但仍有性能或 Token 风险需要在实现阶段设置预算。",
-        "block": "Mini 尚未达到预设门槛，本轮结果只能用于继续修正，不能冻结为生产提取模型。",
-    }[verdict]
+    if is_dify:
+        conclusion = {
+            "pass": "Dify Workflow 已满足对照组质量门槛，但仍只用于低代码 baseline，不进入生产 Memory 链路。",
+            "warn": "Dify Workflow 的质量门槛已通过，但存在性能或 Token 风险，仍只用于低代码 baseline。",
+            "block": "Dify Workflow 尚未达到对照组门槛，本轮结果只用于继续修正。",
+        }[verdict]
+    else:
+        conclusion = {
+            "pass": "本轮已满足 Memory Extraction 的预设发布门槛，可作为首版提取模型候选。",
+            "warn": "本轮质量门槛已通过，但仍有性能或 Token 风险需要在实现阶段设置预算。",
+            "block": "本轮尚未达到预设门槛，只能用于继续修正，不能冻结为生产提取模型。",
+        }[verdict]
     generated = html.escape(report["generated_at"])
     failures = summary["failed_model_cases"]
 
@@ -513,7 +617,10 @@ def render_report(report):
     baseline_score = baseline.get("average_score", "—")
     baseline_json = baseline.get("json_success_rate", "—")
     baseline_p95 = baseline.get("latency_ms", {}).get("p95", "—")
-    baseline_tokens = baseline.get("tokens", {}).get("output_total", "—")
+    baseline_tokens = baseline.get("tokens", {}).get(
+        "total",
+        baseline.get("tokens", {}).get("output_total", "—"),
+    )
     status_class = f"status-{verdict}"
 
     return f"""<!-- Generated by Trae Work -->
@@ -714,7 +821,7 @@ def render_report(report):
           <tr><th scope="row">平均分</th><td>{baseline_score}</td><td>{summary['average_score']}</td></tr>
           <tr><th scope="row">JSON 成功率</th><td>{baseline_json}</td><td>{summary['json_success_rate']}</td></tr>
           <tr><th scope="row">p95 延迟</th><td>{baseline_p95} ms</td><td>{summary['latency_ms']['p95']} ms</td></tr>
-          <tr><th scope="row">输出 Token 总量</th><td>{baseline_tokens}</td><td>{summary['tokens']['output_total']}</td></tr>
+          <tr><th scope="row">API 报告 Token 总量</th><td>{baseline_tokens}</td><td>{summary['tokens']['total']}</td></tr>
         </tbody>
       </table>
     </section>
@@ -737,8 +844,8 @@ def render_report(report):
       <div class="feature-list">
         <div class="feature"><strong>模型</strong><span>{html.escape(conclusion)}</span></div>
         <div class="feature"><strong>删除</strong><span>明确删除不进入 LLM 提取；后端必须按 <code>user_id + memory_id</code> 执行，并同步删除向量。</span></div>
-        <div class="feature"><strong>Dify 时点</strong><span>本轮通过所有真实阻断案例后，在 P1 最终冻结前接入硅基流动，使用同一数据集建立独立 baseline；不进入真实用户数据链路。</span></div>
-        <div class="feature"><strong>Dify 阻断条件</strong><span>若本轮仍有质量阻断，先修正 Dayfold 自有 Prompt 与契约，不同时引入 Dify，以免混淆变量。</span></div>
+        <div class="feature"><strong>Dify 定位</strong><span>Dify 只作为相同数据集、Prompt 与模型下的低代码对照组，不进入真实用户数据链路。</span></div>
+        <div class="feature"><strong>结果解释</strong><span>质量通过仅说明 Workflow 编排未造成不可接受的输出损失，不代表生产架构采用 Dify。</span></div>
       </div>
     </section>
   </main>
@@ -759,7 +866,7 @@ def main():
     ).strip()
     if not api_key:
         raise SystemExit("缺少 DAYFOLD_EVAL_API_KEY")
-    if PROTOCOL not in {"anthropic", "openai"}:
+    if PROTOCOL not in {"anthropic", "openai", "dify"}:
         raise SystemExit(f"不支持的 DAYFOLD_EVAL_PROTOCOL：{PROTOCOL}")
 
     dataset = load_dataset(DATASET_PATH)
@@ -828,7 +935,11 @@ def main():
         },
         "model": MODEL,
         "endpoint_protocol": f"{PROTOCOL}-compatible",
-        "key_fingerprint": hashlib.sha256(api_key.encode()).hexdigest()[:8],
+        "workflow": {
+            "version": DIFY_WORKFLOW_VERSION or None,
+        }
+        if PROTOCOL == "dify"
+        else None,
         "run_config": {
             "temperature": 0,
             "max_tokens": 300,
@@ -857,10 +968,14 @@ def main():
     print("JSON 成功率：", summary["json_success_rate"])
     print("确定性删除成功率：", summary["deterministic_delete_success_rate"])
     print("p95 延迟：", summary["latency_ms"]["p95"], "ms")
-    print("输出 Token：", summary["tokens"]["output_total"])
+    print("API 报告 Token：", summary["tokens"]["total"])
     print("结论：", summary["verdict"])
     print("脱敏结果：", RESULT_PATH)
     print("HTML 报告：", REPORT_PATH)
+    try:
+        assert_request_success(summary)
+    except RuntimeError as exc:
+        raise SystemExit(str(exc)) from None
 
 
 if __name__ == "__main__":

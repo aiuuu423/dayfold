@@ -1,0 +1,848 @@
+{
+  "generated_at": "2026-09-17T16:36:35.258332+08:00",
+  "report_meta": {
+    "title": "Dayfold P1 Dify Workflow v0.4 Baseline",
+    "version": "dify-v0.4",
+    "baseline_label": "SiliconFlow Direct v0.4",
+    "result_file": "dify-v04-results.json",
+    "baseline_file": "siliconflow-v04-results.json",
+    "dataset_file": "mini_retest_cases_v0.3.json",
+    "prompt_file": "extraction_prompt_v0.4.md"
+  },
+  "dataset": {
+    "id": "dayfold-memory-pipeline-v0.3",
+    "case_count": 20,
+    "model_case_count": 18,
+    "deterministic_delete_case_count": 2,
+    "data_class": "人工定义预期结果的虚构测试数据",
+    "sha256": "36356a3b6344591f9f532ffebbad6e4e2ebcbea0e4e1abc18c1cd3a8654f61c9"
+  },
+  "prompt": {
+    "version": "extraction_prompt_v0.4",
+    "sha256": "737275c734e087799acd914b8694998016f31485486ea59cdf39df67fb645257"
+  },
+  "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+  "endpoint_protocol": "dify-compatible",
+  "workflow": {
+    "version": "2026-09-17 14:27"
+  },
+  "run_config": {
+    "temperature": 0,
+    "max_tokens": 300,
+    "concurrency": 2,
+    "timeout_seconds": 60,
+    "random_seed": 20260916
+  },
+  "thresholds": {
+    "model_average_score_pass": 90,
+    "json_success_rate_pass": 1.0,
+    "critical_case_min_score": 90,
+    "deterministic_delete_success_rate_pass": 1.0,
+    "latency_p95_ms_warn": 20000,
+    "output_tokens_p95_warn": 400
+  },
+  "summary": {
+    "model_case_count": 18,
+    "deterministic_delete_case_count": 2,
+    "average_score": 100.0,
+    "http_success_rate": 1.0,
+    "json_success_rate": 1.0,
+    "critical_model_cases_passed": true,
+    "deterministic_delete_success_rate": 1.0,
+    "latency_ms": {
+      "p50": 5770.0,
+      "p95": 14574.7,
+      "max": 16800
+    },
+    "tokens": {
+      "input_total": 0,
+      "output_total": 0,
+      "total": 16568,
+      "output_p95": 0.0
+    },
+    "verdict": "pass",
+    "blockers": [],
+    "warnings": [],
+    "failed_model_cases": [],
+    "failed_delete_cases": []
+  },
+  "baseline": {
+    "model_case_count": 18,
+    "deterministic_delete_case_count": 2,
+    "average_score": 100.0,
+    "http_success_rate": 1.0,
+    "json_success_rate": 1.0,
+    "critical_model_cases_passed": true,
+    "deterministic_delete_success_rate": 1.0,
+    "latency_ms": {
+      "p50": 5614.0,
+      "p95": 20106.25,
+      "max": 21768
+    },
+    "tokens": {
+      "input_total": 16086,
+      "output_total": 483,
+      "total": 16569,
+      "output_p95": 57.05
+    },
+    "verdict": "warn",
+    "blockers": [],
+    "warnings": [
+      "latency_p95_above_20s"
+    ],
+    "failed_model_cases": [],
+    "failed_delete_cases": []
+  },
+  "model_results": [
+    {
+      "case_id": "C01",
+      "slice": "conflicting_location",
+      "route": "model",
+      "critical": true,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "2d9eaed2-9c4c-46ed-a6f8-89600e5d70a3",
+      "workflow_run_id": "9f224849-31f7-433e-b715-be39f1dd0311",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 13.535028,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 14182,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 976
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"archive\",\"target_memory_id\":\"mem-event-shanghai-location\",\"reason\":\"已结束上海实习并搬到北京\"},{\"op\":\"upsert\",\"type\":\"event\",\"content\":\"结束上海实习并搬到北京，现在长期住在海淀区\",\"confidence\":0.95}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "archive",
+            "target_memory_id": "mem-event-shanghai-location",
+            "reason": "已结束上海实习并搬到北京"
+          },
+          {
+            "op": "upsert",
+            "type": "event",
+            "content": "结束上海实习并搬到北京，现在长期住在海淀区",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "E01",
+      "slice": "significant_event",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "e66eec40-d43e-4d99-be35-a6854e016af3",
+      "workflow_run_id": "1364a691-dd07-4595-805e-3d707f1b923d",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 3.68375,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 4571,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 922
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"event\",\"content\":\"从南京搬到了杭州，现在住在西湖区\",\"confidence\":0.95}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "event",
+            "content": "从南京搬到了杭州，现在住在西湖区",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "G01",
+      "slice": "explicit_goal",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "3a20e628-6b34-4ed1-b330-68f13c7ca312",
+      "workflow_run_id": "d79fe03c-7c4a-4822-9039-763714f3b4f0",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 8.212924,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 9691,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 924
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"goal\",\"content\":\"今年十二月参加英语六级考试，每周至少复习四次\",\"confidence\":0.9}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "goal",
+            "content": "今年十二月参加英语六级考试，每周至少复习四次",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H01",
+      "slice": "heldout_transient_emotion",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "b426ffeb-8463-4135-8707-98212e9ee238",
+      "workflow_run_id": "4bc4fe5a-7633-45b5-9c86-459503513486",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 16.005438,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 16800,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 893
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H02",
+      "slice": "heldout_stable_preference",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "56d70679-34ff-4fb6-b96e-054de82e8838",
+      "workflow_run_id": "a6610383-5d5f-490e-bb18-bf4b08ad2613",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 3.538219,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 4483,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 929
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"interest\",\"content\":\"越来越确定自己更喜欢读纸质书，电子书通常看不下去\",\"confidence\":0.9}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "interest",
+            "content": "越来越确定自己更喜欢读纸质书，电子书通常看不下去",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H03",
+      "slice": "heldout_achievement_event",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "89396700-2b8d-4592-9273-721b32adedb6",
+      "workflow_run_id": "4e51a5b0-4bfe-4603-a033-01483d56074a",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 5.535287,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 6334,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 919
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"event\",\"content\":\"第一次独立完成的市场调研报告通过了导师评审\",\"confidence\":0.95}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "event",
+            "content": "第一次独立完成的市场调研报告通过了导师评审",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H04",
+      "slice": "heldout_mixed_ownership",
+      "route": "model",
+      "critical": true,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "081ae0c8-45bb-4090-8c3e-77cec56cac6c",
+      "workflow_run_id": "936dc04a-135b-4633-87e3-d641462fc41e",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 13.021409,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 13649,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 920
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"goal\",\"content\":\"申请北京的用户研究实习\",\"confidence\":0.9}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "goal",
+            "content": "申请北京的用户研究实习",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H05",
+      "slice": "heldout_transient_fatigue",
+      "route": "model",
+      "critical": true,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "23fb68a5-680c-4e52-9a83-9b8395d872e1",
+      "workflow_run_id": "8ea10c1d-d445-49b0-8d40-9540907f6b62",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 4.137219,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 5046,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 898
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H06",
+      "slice": "heldout_transient_frustration",
+      "route": "model",
+      "critical": true,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "e267b837-666d-40ea-8c81-9e6f624faa0e",
+      "workflow_run_id": "48ad6204-c40e-4a1f-a628-3874f58a71ef",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 3.132196,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 3899,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 893
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H07",
+      "slice": "heldout_interest_merge",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "4d2ece68-2be0-4301-8a4c-cad314af8c63",
+      "workflow_run_id": "868311fc-46f4-4eaf-85f9-1e03242a1259",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 4.383346,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 5033,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 934
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"interest\",\"content\":\"过去四个月一直在练习手冲咖啡，最喜欢浅烘焙豆的花果香\",\"confidence\":0.9}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "interest",
+            "content": "过去四个月一直在练习手冲咖啡，最喜欢浅烘焙豆的花果香",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "H08",
+      "slice": "heldout_relocation_merge",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "92f377de-4855-4d3d-bb80-4bd321419660",
+      "workflow_run_id": "fac63574-c4c5-4a19-8caa-ea1a902c962b",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 4.72469,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 5402,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 929
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"event\",\"content\":\"上个月从广州搬到了深圳，目前会长期住在南山区\",\"confidence\":0.95}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "event",
+            "content": "上个月从广州搬到了深圳，目前会长期住在南山区",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "I01",
+      "slice": "stable_interest",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "14a74cf9-deca-4e92-8d62-0033c2e1ec93",
+      "workflow_run_id": "a80d8854-81fe-44fd-babe-8abe185065aa",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 4.032118,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 5047,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 924
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"interest\",\"content\":\"连续三个月学习胶片摄影，尤其喜欢拍城市夜景\",\"confidence\":0.95}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "interest",
+            "content": "连续三个月学习胶片摄影，尤其喜欢拍城市夜景",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "M01",
+      "slice": "multiple_memories",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "6f987ce3-4181-48dc-bddf-164226471127",
+      "workflow_run_id": "1a8d12b2-080e-4867-bf42-d3a41973ebbb",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 5.686448,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 6452,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 951
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"upsert\",\"type\":\"event\",\"content\":\"正式加入了学校摄影社\",\"confidence\":0.95},{\"op\":\"upsert\",\"type\":\"goal\",\"content\":\"在年底前完成一套城市主题作品集\",\"confidence\":0.9}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "upsert",
+            "type": "event",
+            "content": "正式加入了学校摄影社",
+            "confidence": 0.95
+          },
+          {
+            "op": "upsert",
+            "type": "goal",
+            "content": "在年底前完成一套城市主题作品集",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N01",
+      "slice": "transient_detail",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "e779ab26-3092-4dec-9f63-e764435d8e5e",
+      "workflow_run_id": "2f944d42-b21c-421b-bb30-a95225016288",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 9.494489,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 10158,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 894
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N02",
+      "slice": "credential_rejection",
+      "route": "model",
+      "critical": true,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "ad27041a-d2f7-47c1-9370-e96151474943",
+      "workflow_run_id": "1cd5dc1e-abf6-4f02-ab29-a7dd012ea873",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 5.310515,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 6138,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 897
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "N03",
+      "slice": "third_party_rejection",
+      "route": "model",
+      "critical": true,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "d4369451-5f31-4545-b2f2-9fd28683a2a8",
+      "workflow_run_id": "e6a019c1-47d0-42c2-b30c-dd504914d4a4",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 2.834975,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 3861,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 896
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "T01",
+      "slice": "tentative_idea",
+      "route": "model",
+      "critical": false,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "c73165c6-95d4-422d-92fa-82c42f214c02",
+      "workflow_run_id": "c33ded97-d393-4736-8220-07600d4efeb0",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 3.559579,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 4669,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 897
+      },
+      "raw_output": "{\"operations\":[]}",
+      "parsed_output": {
+        "operations": []
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    },
+    {
+      "case_id": "U01",
+      "slice": "goal_replacement",
+      "route": "model",
+      "critical": true,
+      "model": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "task_id": "60944976-ed1c-4fcf-b61a-22dc8e800baa",
+      "workflow_run_id": "7e4707fa-17bc-4895-a232-95374f91818b",
+      "workflow_status": "succeeded",
+      "workflow_elapsed_seconds": 5.129675,
+      "total_price": null,
+      "currency": null,
+      "http_status": 200,
+      "elapsed_ms": 7336,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 972
+      },
+      "raw_output": "{\"operations\":[{\"op\":\"archive\",\"target_memory_id\":\"mem-goal-grad-school\",\"reason\":\"旧目标已被新决定取代\"},{\"op\":\"upsert\",\"type\":\"goal\",\"content\":\"毕业后直接找市场研究相关的工作\",\"confidence\":0.95}]}",
+      "parsed_output": {
+        "operations": [
+          {
+            "op": "archive",
+            "target_memory_id": "mem-goal-grad-school",
+            "reason": "旧目标已被新决定取代"
+          },
+          {
+            "op": "upsert",
+            "type": "goal",
+            "content": "毕业后直接找市场研究相关的工作",
+            "confidence": 0.95
+          }
+        ]
+      },
+      "json_ok": true,
+      "scoring": {
+        "score": 100.0,
+        "structure_ok": true,
+        "operation_f1": 1.0,
+        "type_f1": 1.0,
+        "target_f1": 1.0,
+        "term_recall": 1.0,
+        "forbidden_ok": true,
+        "count_ok": true
+      }
+    }
+  ],
+  "deterministic_delete_results": [
+    {
+      "case_id": "D01",
+      "slice": "explicit_deletion",
+      "route": "deterministic_delete",
+      "critical": true,
+      "elapsed_ms": 0.003,
+      "selected_target_id": "mem-goal-grad-school",
+      "expected_target_id": "mem-goal-grad-school",
+      "candidate_count": 1,
+      "score": 100,
+      "passed": true
+    },
+    {
+      "case_id": "U02",
+      "slice": "interest_deletion",
+      "route": "deterministic_delete",
+      "critical": true,
+      "elapsed_ms": 0.006,
+      "selected_target_id": "mem-interest-running",
+      "expected_target_id": "mem-interest-running",
+      "candidate_count": 1,
+      "score": 100,
+      "passed": true
+    }
+  ],
+  "secret_written_to_report": false
+}
