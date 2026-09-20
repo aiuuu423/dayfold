@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Dayfold P1 公网连通性验证页面，不包含真实数据。"
+    >
+    <title>Dayfold Preview</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <main class="page">
+      <header class="masthead">
+        <p class="eyebrow">P1 deployment probe</p>
+        <h1>Dayfold Preview</h1>
+        <p class="date">只验证静态页面、HTTPS、CORS 与 API 健康状态</p>
+      </header>
+
+      <section class="probe" aria-labelledby="probe-title">
+        <div class="drawing" aria-hidden="true">
+          <svg viewBox="0 0 260 150" role="presentation">
+            <path d="M29 113c28-8 47-30 70-40 24-11 43 5 67-3 20-7 34-25 63-31"/>
+            <path d="M64 93c11 9 21 17 33 23 12-17 24-32 41-44"/>
+            <path d="M164 70c4 13 13 23 26 30 4-17 13-34 27-49"/>
+            <circle cx="29" cy="113" r="4"/>
+            <circle cx="229" cy="39" r="4"/>
+          </svg>
+        </div>
+
+        <div class="copy">
+          <h2 id="probe-title">检查一条最小链路</h2>
+          <p>
+            这里不包含真实数据，也不会连接日记、对话、Memory、数据库或模型服务。
+          </p>
+        </div>
+
+        <form id="probe-form" novalidate>
+          <label for="api-origin">FastAPI 地址</label>
+          <div class="input-row">
+            <input
+              id="api-origin"
+              name="api-origin"
+              type="url"
+              inputmode="url"
+              autocomplete="url"
+              placeholder="https://api.example.com"
+              aria-describedby="origin-help"
+              required
+            >
+            <button id="check-button" type="submit">检查 API</button>
+          </div>
+          <p id="origin-help" class="help">
+            只输入 Origin，不要包含 <code>/health</code>。地址会保存在当前浏览器。
+          </p>
+        </form>
+
+        <section
+          id="status"
+          class="status"
+          data-state="idle"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <p class="status-label">等待检查</p>
+          <p id="status-message">输入 API 地址后开始。</p>
+          <dl id="health-details" hidden>
+            <div><dt>Status</dt><dd id="health-status"></dd></div>
+            <div><dt>Service</dt><dd id="health-service"></dd></div>
+            <div><dt>Environment</dt><dd id="health-environment"></dd></div>
+            <div><dt>Version</dt><dd id="health-version"></dd></div>
+          </dl>
+        </section>
+      </section>
+
+      <footer>
+        <span>Dayfold</span>
+        <span>Preview only</span>
+      </footer>
+    </main>
+  </body>
+</html>
