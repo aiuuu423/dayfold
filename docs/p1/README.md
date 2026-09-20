@@ -25,5 +25,5 @@
 - 已完成：Prompt v0.4 强化 `upsert.confidence` 必填约束，双路径 U01 稳定性测试均为 3/3 通过。
 - 已完成：P1 Minimal Deployment Probe 默认域名链路，Vercel 静态页面可通过 HTTPS 调用 Render FastAPI `/health`，CORS 白名单符合预期。
 - 已完成：`preview.dayfold.com.cn` 与 `api-preview.dayfold.com.cn` 的 DNS、TLS、自定义 Origin 和浏览器联调验证。
-- 受限待验证：公开三网拨测服务未能生成有效 Dayfold 结果，仍需从中国移动、联通、电信真实网络人工验证。
+- 有条件通过：ITDOG 完成 309 个中国多运营商节点测试，294 个成功、15 个失败；中国移动、联通、电信均有 HTTP `200` 成功节点。
 - 待验证：正式入口、部署地域和 Auth 候选。
