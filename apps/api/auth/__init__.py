@@ -1,0 +1,1 @@
+"""Dayfold authentication adapters."""

@@ -129,3 +129,12 @@ def test_static_probe_contains_no_secret_or_fixed_deployment_value():
     )
 
     assert all(fragment not in combined for fragment in forbidden_fragments)
+
+
+def test_dockerfile_preserves_api_package_import_path():
+    dockerfile = (REPO_ROOT / "apps" / "api" / "Dockerfile").read_text(
+        encoding="utf-8"
+    )
+
+    assert "COPY . /app/apps/api" in dockerfile
+    assert '"apps.api.main:app"' in dockerfile
