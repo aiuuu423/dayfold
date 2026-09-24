@@ -1,0 +1,7 @@
+{
+  "envId": "dayfold-p1-probe-d9e0e41d9216f9d",
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "cloudrun": {
+    "name": "dayfold-api-probe"
+  }
+}

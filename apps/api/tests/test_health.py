@@ -111,7 +111,7 @@ def test_static_portfolio_app_contains_core_product_surfaces():
     assert "streamSSE" in javascript
     assert "loadMemories" in javascript
     assert "loadGrowth" in javascript
-    assert 'https://api.dayfold.com.cn' in javascript
+    assert 'https://dayfold-api-global.vercel.app' in javascript
     assert "--canvas:" in stylesheet
     assert "#c7e8f8" in stylesheet
     assert "repeating-linear-gradient" in stylesheet

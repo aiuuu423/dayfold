@@ -1,6 +1,6 @@
 const STORAGE_KEY = "dayfold-portfolio-api-origin";
 const DEFAULT_LOCAL_API = "http://127.0.0.1:8001";
-const PRODUCTION_API = "https://api.dayfold.com.cn";
+const PRODUCTION_API = "https://dayfold-api-global.vercel.app";
 
 const state = {
   apiOrigin: "",

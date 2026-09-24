@@ -1,6 +1,7 @@
 # Dayfold API Preview
 
-这是 P1 Minimal Deployment Probe 的最小 FastAPI 服务。它只提供 `GET /health`，用于验证静态 Preview、HTTPS 和 CORS 链路，不属于 P2 产品后端。
+这是 Dayfold Portfolio MVP 的 FastAPI 服务。现有接口包含健康检查、Staging Auth
+探针、Demo Mode 配置和 Today Entry CRUD。
 
 ## 本地运行
 
@@ -41,6 +42,172 @@ export DAYFOLD_ALLOWED_ORIGINS="https://your-preview.example"
 
 配置不接受 `*`，也不启用跨域凭据。
 
+## Portfolio Demo Mode
+
+Demo Mode 默认关闭。只在使用虚构数据的 Portfolio 环境中启用：
+
+```bash
+export DAYFOLD_DEMO_MODE=true
+export DAYFOLD_DATABASE_PATH="$PWD/local/dayfold-demo.sqlite3"
+```
+
+Demo Mode 使用固定合成用户，客户端不能提交 `user_id`。本地默认使用 SQLite。
+
+### 在线持久化
+
+CloudBase Run 容器的本地文件不作为持久化事实来源。Portfolio 在线环境使用远程
+Turso 数据库，同时保持现有 SQLite Schema 和 Repository SQL：
+
+```bash
+export DAYFOLD_DATA_BACKEND=turso
+export TURSO_DATABASE_URL="<server-side database URL>"
+export TURSO_AUTH_TOKEN="<server-side secret>"
+```
+
+`TURSO_DATABASE_URL` 和 `TURSO_AUTH_TOKEN` 必须只配置在 API 部署平台。缺少任意一项
+时服务会明确失败，不会静默回退到容器临时 SQLite。未设置
+`DAYFOLD_DATA_BACKEND` 时，本地开发继续使用：
+
+```bash
+export DAYFOLD_DATA_BACKEND=sqlite
+export DAYFOLD_DATABASE_PATH="$PWD/local/dayfold-demo.sqlite3"
+```
+
+部署前使用两个独立数据库连接执行写入、读取和清理验证：
+
+```bash
+python3 -m apps.api.scripts.verify_persistence
+```
+
+只有脚本返回 `status=passed` 才能继续线上 API 验收。
+
+Today Entry 接口：
+
+```text
+POST   /v1/entries
+GET    /v1/entries
+GET    /v1/entries/{entry_id}
+PATCH  /v1/entries/{entry_id}  If-Match: <version>
+DELETE /v1/entries/{entry_id}
+```
+
+所有时间必须包含时区并在服务端归一化为 UTC。删除为软删除，已删除记录不会出现在读取
+结果中。
+
+## LLM Chat
+
+Chat 使用服务端方舟 API Key，前端不会接触凭证：
+
+```bash
+export DAYFOLD_LLM_API_KEY="<server-side secret>"
+export DAYFOLD_LLM_ENDPOINT="https://ark.cn-beijing.volces.com/api/plan/v1/messages"
+export DAYFOLD_LLM_MODEL="doubao-seed-2-1-turbo"
+```
+
+也兼容现有本地验证变量 `DAYFOLD_ARK_API_KEY`、`DAYFOLD_ARK_BASE_URL` 和
+`DAYFOLD_ARK_MODEL`。不要把变量值写入仓库或命令历史。
+
+最小 Chat 接口：
+
+```text
+POST /v1/conversations
+GET  /v1/conversations/{conversation_id}/messages
+POST /v1/conversations/{conversation_id}/messages/stream
+```
+
+流接口返回 `text/event-stream`，事件顺序为 `message.start`、一个或多个
+`message.delta`、最后 `message.done`。Provider 失败时返回 `message.error`；
+用户消息保留，系统不会写入虚假的助手回复。
+
+## Memory Extraction
+
+对当前 Demo User 的日记或用户消息执行提取：
+
+```text
+POST /v1/memory-extractions
+{"source_type":"entry|message","source_id":"<resource id>"}
+```
+
+服务使用 `apps/api/prompts/memory_extraction_v0_4.md`，只接受经过严格校验的
+`event`、`interest`、`goal` upsert。Memory 与来源关系在同一事务保存；未知类型、
+缺失字段、越界置信度或非 JSON 输出不会部分落库。助手消息不能作为 Memory 来源。
+
+## Embedding 与 Retrieval
+
+Embedding 使用标准方舟 API，不使用 Agent Plan Chat Key：
+
+```bash
+export DAYFOLD_EMBEDDING_API_KEY="<server-side standard Ark secret>"
+export DAYFOLD_EMBEDDING_ENDPOINT="https://ark.cn-beijing.volces.com/api/v3/embeddings/multimodal"
+export DAYFOLD_EMBEDDING_MODEL="doubao-embedding-vision-251215"
+export DAYFOLD_EMBEDDING_DIMENSIONS="1024"
+```
+
+接口：
+
+```text
+POST /v1/memory-embeddings/sync
+POST /v1/memory-retrievals
+{"query":"职业方向让我有些迷茫","limit":5}
+```
+
+同步接口只处理当前 Demo User 尚未索引的 Active Memory。检索只比较同一租户、
+同一模型、同一维度且状态为 Active 的向量。当前 SQLite 实现以 JSON 保存向量并执行
+精确 cosine search，适合小规模 Portfolio Demo；上线持久化数据库阶段再替换为
+pgvector 索引。
+
+## AI Recall
+
+Chat 在调用 LLM 前自动执行：
+
+```text
+同步未索引 Active Memory
+→ 查询消息 Embedding
+→ 租户内 cosine retrieval
+→ 相关性过滤
+→ Memory Context 注入
+→ SSE 回复
+```
+
+默认召回阈值为 `0.30`，可通过 `DAYFOLD_RECALL_MIN_SCORE` 覆盖。该默认值来自标准方舟
+Embedding 的真实中文语义验证；示例职业方向问题与对应 Goal 的 cosine score 约为
+`0.335`。`message.start` 会返回被采用的 Memory ID、类型与分数，便于验证来源，但
+不会暴露其他用户数据。
+
+## 最近的你
+
+```text
+GET /v1/growth/current
+```
+
+只有当前用户至少存在 `2` 条 Active Memory，且来自至少 `2` 个不同来源时，服务端
+才调用 LLM 生成一到两句“最近的你”。总结与 Memory、Entry/Message 来源关系在同一
+事务保存。证据不足时固定返回：
+
+```json
+{
+  "status": "collecting",
+  "content": "正在积累你的记录。",
+  "evidence": []
+}
+```
+
+Growth 不使用其他用户数据，也不会在证据不足时推测趋势。
+
+## Memory Control
+
+```text
+GET    /v1/memories
+GET    /v1/memories/{memory_id}
+PATCH  /v1/memories/{memory_id}
+DELETE /v1/memories/{memory_id}
+```
+
+详情接口返回 Memory 与来源。PATCH 当前只接受 `{"status":"disabled"}`；Disable
+会立即删除对应 Embedding，使其退出后续召回。Delete 会确定性清理来源、Embedding
+和引用该 Memory 的 Growth 证据，不调用 LLM。所有对象操作绑定当前 Demo User，
+不存在与跨用户访问统一返回 `404 RESOURCE_NOT_FOUND`。
+
 ## 自动测试
 
 ```bash
@@ -74,8 +241,30 @@ API Key、平台 Token、真实日记、私人对话和任何用户数据都不�
 ```text
 GET /v1/auth/probe
 active 用户 -> 200
-deletion_pending、disabled、缺失映射或已删除用户 -> 401 或 403
+deletion_pending、disabled、缺失映射或已删除用户 -> 401
+状态存储未配置或不可用 -> 503
 ```
+
+当前 CloudBase 个人版共享 PostgreSQL 通过 HTTP API 提供状态查询。部署需要配置：
+
+```text
+DAYFOLD_USER_STATUS_BACKEND=cloudbase_http
+DAYFOLD_CLOUDBASE_ENV_ID=<environment id>
+```
+
+该后端把已通过 CloudBase 身份验证的当前用户 AccessToken 转发给 PostgreSQL HTTP
+API，并由 `users_select_self` RLS Policy 限制为只能读取自身未删除的内部状态。
+不需要 `DATABASE_URL`、数据库密码或管理员 API Key。只有状态为 `active` 的内部用户
+映射可以通过；状态接口异常时门禁返回 `503 USER_STATUS_UNAVAILABLE`。
+
+如未来切换到原生 PostgreSQL 直连，则显式配置：
+
+```text
+DAYFOLD_USER_STATUS_BACKEND=postgres
+DATABASE_URL=<server-side secret>
+```
+
+不得把数据库连接串、Token 或 API Key 写入 Git、命令参数或验证报告。
 
 需要设置：
 

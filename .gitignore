@@ -40,3 +40,5 @@ coverage/
 .trae/
 .trae-html-share-packages/
 .superpowers/
+.vercel
+.env*

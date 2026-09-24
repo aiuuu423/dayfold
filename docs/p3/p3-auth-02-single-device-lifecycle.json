@@ -1,0 +1,35 @@
+{
+  "validation": "single_device_minimum_lifecycle",
+  "date": "2026-09-23",
+  "environment": "staging",
+  "passed": true,
+  "credentials_included": false,
+  "phases": [
+    {
+      "phase": "active_baseline",
+      "identity_status": 200,
+      "dayfold_status": 200,
+      "passed": true
+    },
+    {
+      "phase": "deletion_pending",
+      "identity_status": 200,
+      "dayfold_status": 401,
+      "error_code": "INVALID_TOKEN",
+      "passed": true
+    },
+    {
+      "phase": "restored_active",
+      "identity_status": 200,
+      "dayfold_status": 200,
+      "passed": true
+    }
+  ],
+  "scope": {
+    "devices": 1,
+    "cloudbase_identity_blocked": false,
+    "cloudbase_identity_deleted": false,
+    "user_mapping_deleted": false
+  },
+  "remaining_gap": "Two-device blocked and deleted lifecycle validation remains pending."
+}
