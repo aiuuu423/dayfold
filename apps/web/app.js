@@ -1,4 +1,5 @@
-const STORAGE_KEY = "dayfold-portfolio-api-origin";
+const STORAGE_KEY = "dayfold-portfolio-api-origin-v2";
+const LEGACY_STORAGE_KEYS = ["dayfold-portfolio-api-origin"];
 const DEFAULT_LOCAL_API = "http://127.0.0.1:8001";
 const PRODUCTION_API = "https://dayfold-api-global.vercel.app";
 
@@ -45,6 +46,7 @@ function getInitialOrigin() {
   const queryOrigin = new URLSearchParams(window.location.search).get("api");
   let savedOrigin = "";
   try {
+    LEGACY_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
     savedOrigin = window.localStorage.getItem(STORAGE_KEY) || "";
   } catch {
     savedOrigin = "";
@@ -480,15 +482,17 @@ document.querySelector("#open-settings").addEventListener("click", openSettings)
 elements.settingsForm.addEventListener("submit", async (event) => {
   if (event.submitter?.value === "cancel") return;
   event.preventDefault();
+  const previousOrigin = state.apiOrigin;
   try {
     state.apiOrigin = normalizeOrigin(elements.apiOrigin.value);
-    window.localStorage.setItem(STORAGE_KEY, state.apiOrigin);
     const connected = await checkConnection();
     if (!connected) throw new Error("未检测到可用的 Dayfold Demo API。");
+    window.localStorage.setItem(STORAGE_KEY, state.apiOrigin);
     elements.settingsDialog.close();
     showToast("API 已连接");
     setView(state.activeView);
   } catch (error) {
+    state.apiOrigin = previousOrigin;
     showToast(error.message);
   }
 });

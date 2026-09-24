@@ -131,6 +131,11 @@ Memory 作为证据生成 `ready` 结果。验收脚本在 `finally` 中删除�
 与 Entry，并确认本次创建记录残留为 0。详细诊断见
 `.claude/artifacts/fixes/agent-plan-resilience.md`。
 
+线上交互巡检发现旧版连接设置会在验证前保存错误 API Origin，导致浏览器持续显示
+`Failed to fetch`。Web 已升级 localStorage 键并清理旧值，同时改为仅在连接验证成功
+后持久化地址；回归测试覆盖该迁移。当前页面仍是固定合成用户的 Portfolio Demo，
+不包含注册、登录或真实用户数据隔离，正式账号能力仍属于 POST-MVP。
+
 下一任务：进行上线后的交互巡检与作品集交付整理；Chat 的 Agent Plan 路径继续
 保留现有错误分类和有界重试，后续可按稳定性数据决定是否迁移。
 

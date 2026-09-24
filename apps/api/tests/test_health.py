@@ -1,5 +1,6 @@
 import asyncio
 import json
+import subprocess
 from pathlib import Path
 
 import httpx
@@ -119,6 +120,44 @@ def test_static_portfolio_app_contains_core_product_surfaces():
     assert "sidebar" not in html
     assert "prefers-reduced-motion" in stylesheet
     assert vercel_config["cleanUrls"] is True
+
+
+def test_web_ignores_legacy_api_origin_and_only_persists_verified_origin():
+    javascript = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
+    bootstrap = javascript.split("function formatDate", 1)[0]
+    node_script = f"""
+globalThis.document = {{
+  querySelectorAll: () => [],
+  querySelector: () => null,
+}};
+const values = new Map([
+  ["dayfold-portfolio-api-origin", "https://dayfold.com.cn"],
+]);
+globalThis.window = {{
+  location: {{ hostname: "www.dayfold.com.cn", search: "" }},
+  localStorage: {{
+    getItem: (key) => values.get(key) || null,
+    removeItem: (key) => values.delete(key),
+  }},
+}};
+{bootstrap}
+console.log(getInitialOrigin());
+"""
+    result = subprocess.run(
+        ["node", "-e", node_script],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert result.stdout.strip() == "https://dayfold-api-global.vercel.app"
+
+    submit_handler = javascript.split(
+        'elements.settingsForm.addEventListener("submit"',
+        1,
+    )[1]
+    assert submit_handler.index("if (!connected)") < submit_handler.index(
+        "window.localStorage.setItem"
+    )
 
 
 def test_static_probe_contains_no_secret_or_fixed_deployment_value():
