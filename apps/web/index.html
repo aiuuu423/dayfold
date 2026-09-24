@@ -5,80 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Dayfold P1 公网连通性验证页面，不包含真实数据。"
+      content="Dayfold Portfolio Demo：记录今天，让 AI 记住真正重要的事。"
     >
-    <title>Dayfold Preview</title>
+    <title>Dayfold</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M5 23c7-2 10-8 16-10 3-1 5 0 7-3' fill='none' stroke='%23416f87' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"
+    >
     <link rel="stylesheet" href="./styles.css">
     <script src="./app.js" defer></script>
   </head>
   <body>
     <main class="page">
       <header class="masthead">
-        <p class="eyebrow">P1 deployment probe</p>
-        <h1>Dayfold Preview</h1>
-        <p class="date">只验证静态页面、HTTPS、CORS 与 API 健康状态</p>
+        <div>
+          <p class="eyebrow">Portfolio memory demo</p>
+          <h1>Dayfold</h1>
+          <p class="tagline">写下今天。让重要的事，慢慢留下来。</p>
+        </div>
+        <button id="open-settings" class="connection-button" type="button">
+          <span id="connection-dot" class="connection-dot"></span>
+          <span id="connection-label">连接设置</span>
+        </button>
       </header>
 
-      <section class="probe" aria-labelledby="probe-title">
-        <div class="drawing" aria-hidden="true">
-          <svg viewBox="0 0 260 150" role="presentation">
-            <path d="M29 113c28-8 47-30 70-40 24-11 43 5 67-3 20-7 34-25 63-31"/>
-            <path d="M64 93c11 9 21 17 33 23 12-17 24-32 41-44"/>
-            <path d="M164 70c4 13 13 23 26 30 4-17 13-34 27-49"/>
-            <circle cx="29" cy="113" r="4"/>
-            <circle cx="229" cy="39" r="4"/>
-          </svg>
-        </div>
+      <nav class="notebook-tabs" aria-label="主要导航">
+        <button class="is-active" data-view-target="today" type="button">Today</button>
+        <button data-view-target="chat" type="button">Chat</button>
+        <button data-view-target="memories" type="button">Memory</button>
+        <button data-view-target="growth" type="button">Growth</button>
+      </nav>
 
-        <div class="copy">
-          <h2 id="probe-title">检查一条最小链路</h2>
-          <p>
-            这里不包含真实数据，也不会连接日记、对话、Memory、数据库或模型服务。
-          </p>
-        </div>
+      <section class="view is-active" data-view="today" aria-labelledby="today-title">
+        <header class="section-head">
+          <p id="today-date" class="section-label"></p>
+          <h2 id="today-title">今天，留下些什么？</h2>
+          <p>写下一件值得记住的事。保存后，Dayfold 会尝试理解它。</p>
+        </header>
 
-        <form id="probe-form" novalidate>
-          <label for="api-origin">FastAPI 地址</label>
-          <div class="input-row">
-            <input
-              id="api-origin"
-              name="api-origin"
-              type="url"
-              inputmode="url"
-              autocomplete="url"
-              placeholder="https://api.example.com"
-              aria-describedby="origin-help"
-              required
-            >
-            <button id="check-button" type="submit">检查 API</button>
+        <form id="entry-form" class="writing-form">
+          <label class="sr-only" for="entry-content">今天的记录</label>
+          <textarea
+            id="entry-content"
+            name="content"
+            rows="6"
+            maxlength="10000"
+            placeholder="从此刻开始写……"
+            required
+          ></textarea>
+          <div class="form-foot">
+            <span id="entry-status" class="inline-status" aria-live="polite"></span>
+            <button class="primary-action" type="submit">保存这一页</button>
           </div>
-          <p id="origin-help" class="help">
-            只输入 Origin，不要包含 <code>/health</code>。地址会保存在当前浏览器。
-          </p>
         </form>
 
-        <section
-          id="status"
-          class="status"
-          data-state="idle"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <p class="status-label">等待检查</p>
-          <p id="status-message">输入 API 地址后开始。</p>
-          <dl id="health-details" hidden>
-            <div><dt>Status</dt><dd id="health-status"></dd></div>
-            <div><dt>Service</dt><dd id="health-service"></dd></div>
-            <div><dt>Environment</dt><dd id="health-environment"></dd></div>
-            <div><dt>Version</dt><dd id="health-version"></dd></div>
-          </dl>
-        </section>
+        <div class="list-head">
+          <h3>过去的记录</h3>
+          <span id="entry-count"></span>
+        </div>
+        <div id="entries-list" class="entry-list" aria-live="polite"></div>
+      </section>
+
+      <section class="view" data-view="chat" aria-labelledby="chat-title" hidden>
+        <header class="section-head with-action">
+          <div>
+            <p class="section-label">A quiet conversation</p>
+            <h2 id="chat-title">聊聊最近。</h2>
+            <p>Dayfold 会在需要时，想起你之前留下的事。</p>
+          </div>
+          <button id="new-conversation" class="outline-action" type="button">新对话</button>
+        </header>
+
+        <div id="chat-empty" class="empty-state">
+          <p>可以从一句简单的话开始。</p>
+          <button class="suggestion" type="button" data-prompt="最近工作让我有点迷茫。">
+            最近工作让我有点迷茫。
+          </button>
+        </div>
+        <div id="message-list" class="message-list" aria-live="polite"></div>
+
+        <form id="chat-form" class="chat-composer">
+          <label class="sr-only" for="chat-input">发送消息</label>
+          <textarea
+            id="chat-input"
+            rows="2"
+            maxlength="4000"
+            placeholder="写下你正在想的事……"
+            required
+          ></textarea>
+          <button class="primary-action" type="submit">发送</button>
+        </form>
+      </section>
+
+      <section class="view" data-view="memories" aria-labelledby="memory-title" hidden>
+        <header class="section-head">
+          <p class="section-label">What Dayfold remembers</p>
+          <h2 id="memory-title">被记住的事。</h2>
+          <p>每条记忆都有来源，也可以随时关闭或删除。</p>
+        </header>
+        <div id="memory-list" class="memory-list" aria-live="polite"></div>
+      </section>
+
+      <section class="view" data-view="growth" aria-labelledby="growth-title" hidden>
+        <header class="section-head">
+          <p class="section-label">A small reflection</p>
+          <h2 id="growth-title">最近的你。</h2>
+          <p>只从已经发生并被记录的事情里，看见一点变化。</p>
+        </header>
+        <div id="growth-content" class="growth-content" aria-live="polite"></div>
       </section>
 
       <footer>
-        <span>Dayfold</span>
-        <span>Preview only</span>
+        <p>Demo only. Do not enter sensitive personal information.</p>
+        <span>Dayfold / synthetic data only</span>
       </footer>
     </main>
+
+    <dialog id="settings-dialog">
+      <form id="settings-form" method="dialog">
+        <div class="dialog-head">
+          <div>
+            <p class="section-label">Connection</p>
+            <h3>连接 Dayfold API</h3>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="关闭" type="submit">×</button>
+        </div>
+        <label for="api-origin">API Origin</label>
+        <input
+          id="api-origin"
+          name="api-origin"
+          type="url"
+          inputmode="url"
+          placeholder="http://127.0.0.1:8001"
+          required
+        >
+        <p class="field-help">只保存在当前浏览器，不包含任何 API Key。</p>
+        <div class="dialog-actions">
+          <button class="outline-action" value="cancel" type="submit">取消</button>
+          <button id="save-settings" class="primary-action" value="default" type="submit">
+            保存并连接
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   </body>
 </html>

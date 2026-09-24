@@ -93,7 +93,7 @@ def test_wildcard_origin_is_rejected():
         raise AssertionError("Wildcard origin should be rejected")
 
 
-def test_static_probe_files_and_public_copy_exist():
+def test_static_portfolio_app_contains_core_product_surfaces():
     html = (WEB_ROOT / "index.html").read_text(encoding="utf-8")
     javascript = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
     stylesheet = (WEB_ROOT / "styles.css").read_text(encoding="utf-8")
@@ -101,11 +101,23 @@ def test_static_probe_files_and_public_copy_exist():
         (WEB_ROOT / "vercel.json").read_text(encoding="utf-8")
     )
 
-    assert "Dayfold Preview" in html
-    assert "不包含真实数据" in html
-    assert 'data-state="idle"' in html
-    assert "AbortController" in javascript
+    assert "<title>Dayfold</title>" in html
+    assert "Demo only. Do not enter sensitive personal information." in html
+    assert 'data-view="today"' in html
+    assert 'data-view="chat"' in html
+    assert 'data-view="memories"' in html
+    assert 'data-view="growth"' in html
+    assert "loadEntries" in javascript
+    assert "streamSSE" in javascript
+    assert "loadMemories" in javascript
+    assert "loadGrowth" in javascript
+    assert 'https://api.dayfold.com.cn' in javascript
     assert "--canvas:" in stylesheet
+    assert "#c7e8f8" in stylesheet
+    assert "repeating-linear-gradient" in stylesheet
+    assert "HanziPen SC" in stylesheet
+    assert "sidebar" not in html
+    assert "prefers-reduced-motion" in stylesheet
     assert vercel_config["cleanUrls"] is True
 
 
