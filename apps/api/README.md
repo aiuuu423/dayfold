@@ -17,13 +17,16 @@ python3 -m pip install --break-system-packages -r apps/api/requirements.txt
 python3 -m uvicorn apps.api.main:app --host 127.0.0.1 --port 8001
 ```
 
-另开一个终端启动静态页面：
+另开一个终端安装并启动 Vite 页面：
 
 ```bash
-python3 -m http.server 8000 --directory apps/web
+npm install --prefix apps/web
+cp apps/web/.env.example apps/web/.env.local
+npm run dev --prefix apps/web -- --host 127.0.0.1 --port 8000
 ```
 
-打开 `http://localhost:8000`，在页面中输入 `http://127.0.0.1:8001`。
+在 `apps/web/.env.local` 配置 CloudBase 环境 ID、地域和本地 API Origin，然后打开
+`http://localhost:8000`。CloudBase API Key、密码和 Token 不得写入该文件或前端构建。
 
 ## CORS 白名单
 
@@ -253,9 +256,11 @@ DAYFOLD_CLOUDBASE_ENV_ID=<environment id>
 ```
 
 该后端把已通过 CloudBase 身份验证的当前用户 AccessToken 转发给 PostgreSQL HTTP
-API，并由 `users_select_self` RLS Policy 限制为只能读取自身未删除的内部状态。
+API，并由 `users_select_self` RLS Policy 限制为只能读取自身未删除的内部
+`id`、`auth_subject` 和 `status`。
 不需要 `DATABASE_URL`、数据库密码或管理员 API Key。只有状态为 `active` 的内部用户
-映射可以通过；状态接口异常时门禁返回 `503 USER_STATUS_UNAVAILABLE`。
+映射可以通过；业务路由只接收该映射中的内部 UUID。状态接口异常时门禁返回
+`503 USER_STATUS_UNAVAILABLE`。
 
 如未来切换到原生 PostgreSQL 直连，则显式配置：
 

@@ -1,0 +1,17 @@
+{
+  "name": "@dayfold/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "preview": "vite preview",
+    "test": "node --test",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@cloudbase/js-sdk": "2.32.0"
+  },
+  "devDependencies": {
+    "vite": "7.3.6"
+  }
+}

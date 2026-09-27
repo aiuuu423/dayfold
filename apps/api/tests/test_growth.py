@@ -5,7 +5,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from apps.api.demo import DemoSettings
+from apps.api.auth.context import AuthContext
 from apps.api.growth import (
     GROWTH_SYSTEM_PROMPT,
     ArkGrowthProvider,
@@ -13,7 +13,7 @@ from apps.api.growth import (
 )
 from apps.api.main import (
     app,
-    get_demo_settings,
+    get_auth_context,
     get_growth_provider,
     get_growth_repository,
     get_memory_repository,
@@ -62,10 +62,12 @@ def stores(tmp_path: Path):
 
 
 @pytest.fixture(autouse=True)
-def demo_dependencies(stores):
+def auth_dependencies(stores):
     memories, growth = stores
-    app.dependency_overrides[get_demo_settings] = lambda: DemoSettings(
-        user_id=DEMO_USER_ID
+    app.dependency_overrides[get_auth_context] = lambda: AuthContext(
+        user_id=DEMO_USER_ID,
+        auth_subject="fictional-user",
+        email="fictional@example.test",
     )
     app.dependency_overrides[get_memory_repository] = lambda: memories
     app.dependency_overrides[get_growth_repository] = lambda: growth

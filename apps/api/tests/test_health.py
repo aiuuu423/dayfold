@@ -1,6 +1,5 @@
 import asyncio
 import json
-import subprocess
 from pathlib import Path
 
 import httpx
@@ -103,7 +102,8 @@ def test_static_portfolio_app_contains_core_product_surfaces():
     )
 
     assert "<title>Dayfold</title>" in html
-    assert "Demo only. Do not enter sensitive personal information." in html
+    assert 'id="login-form"' in html
+    assert 'id="sign-out"' in html
     assert 'data-view="today"' in html
     assert 'data-view="chat"' in html
     assert 'data-view="memories"' in html
@@ -112,7 +112,7 @@ def test_static_portfolio_app_contains_core_product_surfaces():
     assert "streamSSE" in javascript
     assert "loadMemories" in javascript
     assert "loadGrowth" in javascript
-    assert 'https://dayfold-api-global.vercel.app' in javascript
+    assert 'from "./public-config.js"' in javascript
     assert "--canvas:" in stylesheet
     assert "#c7e8f8" in stylesheet
     assert "repeating-linear-gradient" in stylesheet
@@ -122,42 +122,18 @@ def test_static_portfolio_app_contains_core_product_surfaces():
     assert vercel_config["cleanUrls"] is True
 
 
-def test_web_ignores_legacy_api_origin_and_only_persists_verified_origin():
+def test_web_uses_fixed_public_config_without_runtime_origin_settings():
+    html = (WEB_ROOT / "index.html").read_text(encoding="utf-8")
     javascript = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
-    bootstrap = javascript.split("function formatDate", 1)[0]
-    node_script = f"""
-globalThis.document = {{
-  querySelectorAll: () => [],
-  querySelector: () => null,
-}};
-const values = new Map([
-  ["dayfold-portfolio-api-origin", "https://dayfold.com.cn"],
-]);
-globalThis.window = {{
-  location: {{ hostname: "www.dayfold.com.cn", search: "" }},
-  localStorage: {{
-    getItem: (key) => values.get(key) || null,
-    removeItem: (key) => values.delete(key),
-  }},
-}};
-{bootstrap}
-console.log(getInitialOrigin());
-"""
-    result = subprocess.run(
-        ["node", "-e", node_script],
-        check=True,
-        capture_output=True,
-        text=True,
+    public_config = (WEB_ROOT / "public-config.js").read_text(
+        encoding="utf-8"
     )
-    assert result.stdout.strip() == "https://dayfold-api-global.vercel.app"
 
-    submit_handler = javascript.split(
-        'elements.settingsForm.addEventListener("submit"',
-        1,
-    )[1]
-    assert submit_handler.index("if (!connected)") < submit_handler.index(
-        "window.localStorage.setItem"
-    )
+    assert "https://dayfold-api-global.vercel.app" in public_config
+    assert "dayfold-portfolio-api-origin" not in javascript
+    assert "localStorage" not in javascript
+    assert 'id="settings-dialog"' not in html
+    assert 'id="api-origin"' not in html
 
 
 def test_static_probe_contains_no_secret_or_fixed_deployment_value():

@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import asdict
 
 import httpx
 import pytest
@@ -9,11 +10,20 @@ from apps.api.auth.cloudbase import (
     TokenExpired,
     VerifiedIdentity,
 )
+from apps.api.auth.context import AuthContext
 from apps.api.auth.user_status import (
     CloudBaseHttpUserStatusStore,
+    InternalUser,
     PostgresUserStatusStore,
 )
-from apps.api.main import app, get_auth_adapter, get_user_status_store
+from apps.api.main import (
+    app,
+    get_auth_adapter,
+    get_auth_context,
+    get_user_status_store,
+)
+
+USER_ID = "00000000-0000-4000-8000-000000000101"
 
 
 def request(method: str, path: str, **kwargs) -> httpx.Response:
@@ -41,16 +51,24 @@ class StubAuthAdapter:
 
 
 class StubUserStatusStore:
-    def __init__(self, status=None, error: Exception | None = None):
-        self._status = status
+    def __init__(self, user=None, error: Exception | None = None):
+        self._user = user
         self._error = error
 
-    async def get_status(self, auth_subject: str, access_token: str):
+    async def get_user(self, auth_subject: str, access_token: str):
         assert auth_subject == "fictional-user"
         assert access_token == "opaque-test-token"
         if self._error:
             raise self._error
-        return self._status
+        return self._user
+
+
+def internal_user(status: str = "active") -> InternalUser:
+    return InternalUser(
+        id=USER_ID,
+        auth_subject="fictional-user",
+        status=status,
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -67,7 +85,7 @@ def test_auth_probe_returns_only_authenticated_status_for_valid_token():
         )
     )
     app.dependency_overrides[get_user_status_store] = lambda: StubUserStatusStore(
-        status="active"
+        user=internal_user()
     )
 
     response = request(
@@ -82,8 +100,11 @@ def test_auth_probe_returns_only_authenticated_status_for_valid_token():
     assert "fictional@example.test" not in response.text
 
 
-@pytest.mark.parametrize("status", ["deletion_pending", "disabled", None])
-def test_auth_probe_rejects_non_active_or_missing_internal_user(status):
+@pytest.mark.parametrize(
+    "user",
+    [internal_user("deletion_pending"), internal_user("disabled"), None],
+)
+def test_auth_probe_rejects_non_active_or_missing_internal_user(user):
     app.dependency_overrides[get_auth_adapter] = lambda: StubAuthAdapter(
         result=VerifiedIdentity(
             auth_subject="fictional-user",
@@ -91,7 +112,7 @@ def test_auth_probe_rejects_non_active_or_missing_internal_user(status):
         )
     )
     app.dependency_overrides[get_user_status_store] = lambda: StubUserStatusStore(
-        status=status
+        user=user
     )
 
     response = request(
@@ -229,6 +250,64 @@ def test_auth_probe_maps_provider_failure_to_service_unavailable():
 
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "AUTH_PROVIDER_UNAVAILABLE"
+
+
+def test_auth_context_contains_only_verified_identity_fields():
+    context = AuthContext(
+        user_id=USER_ID,
+        auth_subject="fictional-user",
+        email="fictional@example.test",
+    )
+
+    assert asdict(context) == {
+        "user_id": USER_ID,
+        "auth_subject": "fictional-user",
+        "email": "fictional@example.test",
+    }
+    assert "opaque-test-token" not in repr(context)
+    assert not hasattr(context, "token")
+    assert not hasattr(context, "access_token")
+
+
+@pytest.mark.parametrize("path", ["/v1/auth/probe", "/v1/auth/session"])
+def test_auth_endpoints_reuse_auth_context_and_return_no_identity(path):
+    app.dependency_overrides[get_auth_context] = lambda: AuthContext(
+        user_id=USER_ID,
+        auth_subject="fictional-user",
+        email="fictional@example.test",
+    )
+
+    response = request("GET", path)
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "authenticated"}
+    assert USER_ID not in response.text
+    assert "fictional-user" not in response.text
+    assert "fictional@example.test" not in response.text
+
+
+def test_every_business_route_depends_on_auth_context():
+    business_paths = {
+        "/v1/entries",
+        "/v1/entries/{entry_id}",
+        "/v1/conversations",
+        "/v1/conversations/{conversation_id}/messages",
+        "/v1/conversations/{conversation_id}/messages/stream",
+        "/v1/memory-extractions",
+        "/v1/memories",
+        "/v1/memories/{memory_id}",
+        "/v1/memory-embeddings/sync",
+        "/v1/memory-retrievals",
+        "/v1/growth/current",
+    }
+    matching_routes = [route for route in app.routes if route.path in business_paths]
+
+    assert {route.path for route in matching_routes} == business_paths
+    for route in matching_routes:
+        dependency_calls = {
+            dependency.call for dependency in route.dependant.dependencies
+        }
+        assert get_auth_context in dependency_calls, route.path
 
 
 def test_auth_probe_cors_preflight_allows_authorization_header(monkeypatch):

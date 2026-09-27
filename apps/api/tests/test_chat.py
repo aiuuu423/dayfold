@@ -6,12 +6,12 @@ import httpx
 import pytest
 
 from apps.api.chat import ArkChatProvider, ProviderUnavailable, SqliteChatRepository
-from apps.api.demo import DemoSettings
+from apps.api.auth.context import AuthContext
 from apps.api.main import (
     app,
+    get_auth_context,
     get_chat_provider,
     get_chat_repository,
-    get_demo_settings,
     get_embedding_provider,
     get_memory_repository,
     get_vector_repository,
@@ -64,9 +64,11 @@ def repository(tmp_path: Path):
 
 
 @pytest.fixture(autouse=True)
-def demo_dependencies(repository):
-    app.dependency_overrides[get_demo_settings] = lambda: DemoSettings(
-        user_id=DEMO_USER_ID
+def auth_dependencies(repository):
+    app.dependency_overrides[get_auth_context] = lambda: AuthContext(
+        user_id=DEMO_USER_ID,
+        auth_subject="fictional-user",
+        email="fictional@example.test",
     )
     app.dependency_overrides[get_chat_repository] = lambda: repository
     yield

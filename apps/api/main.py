@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
-from fastapi import Depends, FastAPI, Header
+from fastapi import Depends, FastAPI, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -15,6 +15,7 @@ from apps.api.auth.cloudbase import (
     InvalidToken,
     TokenExpired,
 )
+from apps.api.auth.context import AuthContext
 from apps.api.auth.user_status import (
     CloudBaseHttpUserStatusStore,
     PostgresUserStatusStore,
@@ -65,6 +66,13 @@ HEALTH_RESPONSE = {
     "environment": "preview",
     "version": "p1-probe",
 }
+
+
+class AuthContextError(Exception):
+    def __init__(self, status_code: int, code: str, message: str) -> None:
+        self.status_code = status_code
+        self.code = code
+        self.message = message
 
 
 def parse_allowed_origins(raw_origins: str | None) -> tuple[str, ...]:
@@ -119,6 +127,67 @@ def get_user_status_store() -> UserStatusStore | None:
     if backend is None and database_url:
         return PostgresUserStatusStore(database_url)
     return None
+
+
+async def get_auth_context(
+    authorization: str | None = Header(default=None),
+    adapter: CloudBaseAuthAdapter | None = Depends(get_auth_adapter),
+    user_status_store: UserStatusStore | None = Depends(get_user_status_store),
+) -> AuthContext:
+    if not authorization:
+        raise AuthContextError(401, "INVALID_TOKEN", "Authentication is required.")
+
+    scheme, separator, token = authorization.partition(" ")
+    if (
+        not separator
+        or scheme.lower() != "bearer"
+        or not token
+        or token != token.strip()
+        or " " in token
+    ):
+        raise AuthContextError(401, "INVALID_TOKEN", "Authentication is required.")
+    if adapter is None:
+        raise AuthContextError(
+            503,
+            "AUTH_PROVIDER_UNAVAILABLE",
+            "Authentication provider is unavailable.",
+        )
+
+    try:
+        identity = await adapter.verify_access_token(token)
+    except (InvalidToken, TokenExpired):
+        raise AuthContextError(
+            401, "INVALID_TOKEN", "Authentication is required."
+        ) from None
+    except AuthProviderUnavailable:
+        raise AuthContextError(
+            503,
+            "AUTH_PROVIDER_UNAVAILABLE",
+            "Authentication provider is unavailable.",
+        ) from None
+
+    if user_status_store is None:
+        raise AuthContextError(
+            503,
+            "USER_STATUS_UNAVAILABLE",
+            "User status is unavailable.",
+        )
+    try:
+        user = await user_status_store.get_user(identity.auth_subject, token)
+    except UserStatusStoreUnavailable:
+        raise AuthContextError(
+            503,
+            "USER_STATUS_UNAVAILABLE",
+            "User status is unavailable.",
+        ) from None
+    if user is None or user.status != "active":
+        raise AuthContextError(401, "INVALID_TOKEN", "Authentication is required.")
+
+    return AuthContext(
+        user_id=user.id,
+        auth_subject=user.auth_subject,
+        email=identity.email,
+    )
 
 
 def get_demo_settings() -> DemoSettings | None:
@@ -337,6 +406,14 @@ def auth_error(status_code: int, code: str, message: str) -> JSONResponse:
     )
 
 
+@app.exception_handler(AuthContextError)
+async def handle_auth_context_error(
+    request: Request,
+    error: AuthContextError,
+) -> JSONResponse:
+    return auth_error(error.status_code, error.code, error.message)
+
+
 def resource_error(status_code: int, code: str, message: str) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
@@ -385,12 +462,6 @@ def provider_error_response(error: ProviderRequestError) -> JSONResponse:
     return resource_error(status_code, code, message)
 
 
-def require_demo(settings: DemoSettings | None) -> JSONResponse | None:
-    if settings is None:
-        return JSONResponse(status_code=404, content={"detail": "Not Found"})
-    return None
-
-
 def sse_event(event: str, data: dict[str, object]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
@@ -435,14 +506,11 @@ def get_demo_info(
 @app.post("/v1/entries", status_code=201)
 async def create_entry(
     payload: EntryCreate,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteEntryRepository = Depends(get_entry_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
     entry = await repository.create(
-        settings.user_id,
+        auth.user_id,
         payload.content,
         payload.occurred_at.astimezone(timezone.utc)
         .isoformat()
@@ -453,26 +521,20 @@ async def create_entry(
 
 @app.get("/v1/entries")
 async def list_entries(
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteEntryRepository = Depends(get_entry_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
-    entries = await repository.list(settings.user_id)
+    entries = await repository.list(auth.user_id)
     return {"items": [entry.public_view() for entry in entries]}
 
 
 @app.get("/v1/entries/{entry_id}")
 async def get_entry(
     entry_id: str,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteEntryRepository = Depends(get_entry_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
-    entry = await repository.get(settings.user_id, entry_id)
+    entry = await repository.get(auth.user_id, entry_id)
     if entry is None:
         return resource_error(404, "RESOURCE_NOT_FOUND", "Resource was not found.")
     return entry.public_view()
@@ -483,15 +545,12 @@ async def update_entry(
     entry_id: str,
     payload: EntryPatch,
     if_match: int = Header(alias="If-Match"),
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteEntryRepository = Depends(get_entry_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
     try:
         entry = await repository.update(
-            settings.user_id,
+            auth.user_id,
             entry_id,
             payload.content,
             expected_version=if_match,
@@ -510,13 +569,10 @@ async def update_entry(
 @app.delete("/v1/entries/{entry_id}", status_code=202)
 async def delete_entry(
     entry_id: str,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteEntryRepository = Depends(get_entry_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
-    if not await repository.delete(settings.user_id, entry_id):
+    if not await repository.delete(auth.user_id, entry_id):
         return resource_error(404, "RESOURCE_NOT_FOUND", "Resource was not found.")
     return {"id": entry_id, "status": "deleted"}
 
@@ -524,14 +580,11 @@ async def delete_entry(
 @app.post("/v1/conversations", status_code=201)
 async def create_conversation(
     payload: ConversationCreate,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteChatRepository = Depends(get_chat_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
     conversation = await repository.create_conversation(
-        settings.user_id,
+        auth.user_id,
         payload.title,
     )
     return conversation.public_view()
@@ -540,15 +593,12 @@ async def create_conversation(
 @app.get("/v1/conversations/{conversation_id}/messages")
 async def list_messages(
     conversation_id: str,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteChatRepository = Depends(get_chat_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
-    if await repository.get_conversation(settings.user_id, conversation_id) is None:
+    if await repository.get_conversation(auth.user_id, conversation_id) is None:
         return resource_error(404, "RESOURCE_NOT_FOUND", "Resource was not found.")
-    messages = await repository.list_messages(settings.user_id, conversation_id)
+    messages = await repository.list_messages(auth.user_id, conversation_id)
     return {"items": [message.public_view() for message in messages]}
 
 
@@ -556,22 +606,19 @@ async def list_messages(
 async def stream_message(
     conversation_id: str,
     payload: MessageCreate,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteChatRepository = Depends(get_chat_repository),
     provider: ChatProvider | None = Depends(get_chat_provider),
     vector_repository: SqliteVectorRepository = Depends(get_vector_repository),
     embedding_provider: EmbeddingProvider | None = Depends(get_embedding_provider),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
     if provider is None:
         return resource_error(
             503,
             "LLM_UNAVAILABLE",
             "The AI service is unavailable.",
         )
-    if await repository.get_conversation(settings.user_id, conversation_id) is None:
+    if await repository.get_conversation(auth.user_id, conversation_id) is None:
         return resource_error(404, "RESOURCE_NOT_FOUND", "Resource was not found.")
 
     memory_context = None
@@ -579,7 +626,7 @@ async def stream_message(
     if embedding_provider is not None:
         try:
             unembedded = await vector_repository.list_unembedded(
-                settings.user_id,
+                auth.user_id,
                 embedding_provider.model,
                 embedding_provider.dimensions,
             )
@@ -588,7 +635,7 @@ async def stream_message(
                     [memory.content for memory in unembedded]
                 )
                 await vector_repository.store_many(
-                    settings.user_id,
+                    auth.user_id,
                     unembedded,
                     memory_vectors,
                     embedding_provider.model,
@@ -596,7 +643,7 @@ async def stream_message(
                 )
             query_vectors = await embedding_provider.embed([payload.content])
             matches = await vector_repository.search(
-                settings.user_id,
+                auth.user_id,
                 query_vectors[0],
                 embedding_provider.model,
                 embedding_provider.dimensions,
@@ -621,14 +668,14 @@ async def stream_message(
             )
 
     user_message = await repository.add_message(
-        settings.user_id,
+        auth.user_id,
         conversation_id,
         "user",
         payload.content,
     )
     if user_message is None:
         return resource_error(404, "RESOURCE_NOT_FOUND", "Resource was not found.")
-    history = await repository.list_messages(settings.user_id, conversation_id)
+    history = await repository.list_messages(auth.user_id, conversation_id)
     provider_messages = [
         {"role": message.role, "content": message.content}
         for message in history
@@ -660,7 +707,7 @@ async def stream_message(
             return
 
         assistant_message = await repository.add_message(
-            settings.user_id,
+            auth.user_id,
             conversation_id,
             "assistant",
             "".join(chunks),
@@ -689,13 +736,10 @@ async def stream_message(
 @app.post("/v1/memory-extractions", status_code=201)
 async def extract_memories(
     payload: MemoryExtractionRequest,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteMemoryRepository = Depends(get_memory_repository),
     provider: MemoryExtractionProvider | None = Depends(get_memory_provider),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
     if provider is None:
         return resource_error(
             503,
@@ -703,7 +747,7 @@ async def extract_memories(
             "The AI service is unavailable.",
         )
     source_content = await repository.get_source_content(
-        settings.user_id,
+        auth.user_id,
         payload.source_type,
         payload.source_id,
     )
@@ -712,7 +756,7 @@ async def extract_memories(
     try:
         operations = await provider.extract(source_content)
         memories = await repository.store_extraction(
-            settings.user_id,
+            auth.user_id,
             payload.source_type,
             payload.source_id,
             operations,
@@ -733,30 +777,24 @@ async def extract_memories(
 
 @app.get("/v1/memories")
 async def list_memories(
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteMemoryRepository = Depends(get_memory_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
-    memories = await repository.list(settings.user_id)
+    memories = await repository.list(auth.user_id)
     return {"items": [memory.public_view() for memory in memories]}
 
 
 @app.get("/v1/memories/{memory_id}")
 async def get_memory(
     memory_id: str,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteMemoryRepository = Depends(get_memory_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
-    memory = await repository.get(settings.user_id, memory_id)
+    memory = await repository.get(auth.user_id, memory_id)
     if memory is None:
         return resource_error(404, "RESOURCE_NOT_FOUND", "Resource was not found.")
     view = memory.public_view()
-    view["sources"] = await repository.list_sources(settings.user_id, memory_id)
+    view["sources"] = await repository.list_sources(auth.user_id, memory_id)
     return view
 
 
@@ -764,43 +802,34 @@ async def get_memory(
 async def disable_memory(
     memory_id: str,
     payload: MemoryStatusPatch,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteMemoryRepository = Depends(get_memory_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
-    memory = await repository.disable(settings.user_id, memory_id)
+    memory = await repository.disable(auth.user_id, memory_id)
     if memory is None:
         return resource_error(404, "RESOURCE_NOT_FOUND", "Resource was not found.")
     view = memory.public_view()
-    view["sources"] = await repository.list_sources(settings.user_id, memory_id)
+    view["sources"] = await repository.list_sources(auth.user_id, memory_id)
     return view
 
 
 @app.delete("/v1/memories/{memory_id}", status_code=202)
 async def delete_memory(
     memory_id: str,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteMemoryRepository = Depends(get_memory_repository),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
-    if not await repository.delete(settings.user_id, memory_id):
+    if not await repository.delete(auth.user_id, memory_id):
         return resource_error(404, "RESOURCE_NOT_FOUND", "Resource was not found.")
     return {"id": memory_id, "status": "deleted"}
 
 
 @app.post("/v1/memory-embeddings/sync")
 async def sync_memory_embeddings(
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteVectorRepository = Depends(get_vector_repository),
     provider: EmbeddingProvider | None = Depends(get_embedding_provider),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
     if provider is None:
         return resource_error(
             503,
@@ -808,7 +837,7 @@ async def sync_memory_embeddings(
             "The embedding service is unavailable.",
         )
     memories = await repository.list_unembedded(
-        settings.user_id,
+        auth.user_id,
         provider.model,
         provider.dimensions,
     )
@@ -817,7 +846,7 @@ async def sync_memory_embeddings(
     try:
         vectors = await provider.embed([memory.content for memory in memories])
         await repository.store_many(
-            settings.user_id,
+            auth.user_id,
             memories,
             vectors,
             provider.model,
@@ -841,13 +870,10 @@ async def sync_memory_embeddings(
 @app.post("/v1/memory-retrievals")
 async def retrieve_memories(
     payload: MemoryRetrievalRequest,
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteVectorRepository = Depends(get_vector_repository),
     provider: EmbeddingProvider | None = Depends(get_embedding_provider),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
     if provider is None:
         return resource_error(
             503,
@@ -858,7 +884,7 @@ async def retrieve_memories(
         query_vectors = await provider.embed([payload.query])
         query_vector = query_vectors[0]
         matches = await repository.search(
-            settings.user_id,
+            auth.user_id,
             query_vector,
             provider.model,
             provider.dimensions,
@@ -881,14 +907,11 @@ async def retrieve_memories(
 
 @app.get("/v1/growth/current")
 async def get_current_growth(
-    settings: DemoSettings | None = Depends(get_demo_settings),
+    auth: AuthContext = Depends(get_auth_context),
     repository: SqliteGrowthRepository = Depends(get_growth_repository),
     provider: GrowthProvider | None = Depends(get_growth_provider),
 ):
-    unavailable = require_demo(settings)
-    if unavailable:
-        return unavailable
-    evidence = await repository.collect_evidence(settings.user_id)
+    evidence = await repository.collect_evidence(auth.user_id)
     if not has_enough_evidence(evidence):
         return {
             "status": "collecting",
@@ -904,7 +927,7 @@ async def get_current_growth(
     try:
         content = await provider.generate(evidence)
         summary = await repository.store(
-            settings.user_id,
+            auth.user_id,
             content,
             evidence,
         )
@@ -921,58 +944,13 @@ async def get_current_growth(
 
 @app.get("/v1/auth/probe")
 async def get_auth_probe(
-    authorization: str | None = Header(default=None),
-    adapter: CloudBaseAuthAdapter | None = Depends(get_auth_adapter),
-    user_status_store: UserStatusStore | None = Depends(get_user_status_store),
+    auth: AuthContext = Depends(get_auth_context),
 ):
-    if not authorization:
-        return auth_error(401, "INVALID_TOKEN", "Authentication is required.")
+    return {"status": "authenticated"}
 
-    scheme, separator, token = authorization.partition(" ")
-    if (
-        not separator
-        or scheme.lower() != "bearer"
-        or not token
-        or token != token.strip()
-        or " " in token
-    ):
-        return auth_error(401, "INVALID_TOKEN", "Authentication is required.")
-    if adapter is None:
-        return auth_error(
-            503,
-            "AUTH_PROVIDER_UNAVAILABLE",
-            "Authentication provider is unavailable.",
-        )
 
-    try:
-        identity = await adapter.verify_access_token(token)
-    except (InvalidToken, TokenExpired):
-        return auth_error(401, "INVALID_TOKEN", "Authentication is required.")
-    except AuthProviderUnavailable:
-        return auth_error(
-            503,
-            "AUTH_PROVIDER_UNAVAILABLE",
-            "Authentication provider is unavailable.",
-        )
-
-    if user_status_store is None:
-        return auth_error(
-            503,
-            "USER_STATUS_UNAVAILABLE",
-            "User status is unavailable.",
-        )
-    try:
-        user_status = await user_status_store.get_status(
-            identity.auth_subject,
-            token,
-        )
-    except UserStatusStoreUnavailable:
-        return auth_error(
-            503,
-            "USER_STATUS_UNAVAILABLE",
-            "User status is unavailable.",
-        )
-    if user_status != "active":
-        return auth_error(401, "INVALID_TOKEN", "Authentication is required.")
-
+@app.get("/v1/auth/session")
+async def get_auth_session(
+    auth: AuthContext = Depends(get_auth_context),
+):
     return {"status": "authenticated"}

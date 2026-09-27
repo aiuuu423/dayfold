@@ -1,16 +1,23 @@
-const STORAGE_KEY = "dayfold-portfolio-api-origin-v2";
-const LEGACY_STORAGE_KEYS = ["dayfold-portfolio-api-origin"];
-const DEFAULT_LOCAL_API = "http://127.0.0.1:8001";
-const PRODUCTION_API = "https://dayfold-api-global.vercel.app";
+import { createApiClient } from "./api-client.js";
+import { getAuthClient } from "./auth-client.js";
+import { createAuthView } from "./auth-ui.js";
+import { publicConfig } from "./public-config.js";
 
 const state = {
-  apiOrigin: "",
   conversationId: null,
   activeView: "today",
-  connected: false,
+  authenticated: false,
 };
 
 const elements = {
+  sessionLoading: document.querySelector("#session-loading"),
+  loginView: document.querySelector("#login-view"),
+  loginForm: document.querySelector("#login-form"),
+  loginEmail: document.querySelector("#login-email"),
+  loginPassword: document.querySelector("#login-password"),
+  authError: document.querySelector("#auth-error"),
+  appShell: document.querySelector("#app-shell"),
+  signOut: document.querySelector("#sign-out"),
   views: [...document.querySelectorAll("[data-view]")],
   navButtons: [...document.querySelectorAll("[data-view-target]")],
   todayDate: document.querySelector("#today-date"),
@@ -26,40 +33,8 @@ const elements = {
   messageList: document.querySelector("#message-list"),
   memoryList: document.querySelector("#memory-list"),
   growthContent: document.querySelector("#growth-content"),
-  settingsDialog: document.querySelector("#settings-dialog"),
-  settingsForm: document.querySelector("#settings-form"),
-  apiOrigin: document.querySelector("#api-origin"),
-  connectionDot: document.querySelector("#connection-dot"),
-  connectionLabel: document.querySelector("#connection-label"),
   toast: document.querySelector("#toast"),
 };
-
-function normalizeOrigin(value) {
-  const url = new URL(value.trim());
-  if (!["http:", "https:"].includes(url.protocol)) {
-    throw new Error("unsupported-protocol");
-  }
-  return url.origin;
-}
-
-function getInitialOrigin() {
-  const queryOrigin = new URLSearchParams(window.location.search).get("api");
-  let savedOrigin = "";
-  try {
-    LEGACY_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
-    savedOrigin = window.localStorage.getItem(STORAGE_KEY) || "";
-  } catch {
-    savedOrigin = "";
-  }
-  const fallback = ["localhost", "127.0.0.1"].includes(window.location.hostname)
-    ? DEFAULT_LOCAL_API
-    : PRODUCTION_API;
-  try {
-    return normalizeOrigin(queryOrigin || savedOrigin || fallback);
-  } catch {
-    return fallback;
-  }
-}
 
 function formatDate(value, options = {}) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -78,31 +53,6 @@ function setTodayDate() {
   }).format(new Date());
 }
 
-async function api(path, options = {}) {
-  const response = await fetch(`${state.apiOrigin}${path}`, {
-    ...options,
-    headers: {
-      Accept: "application/json",
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
-    },
-  });
-  if (!response.ok) {
-    let message = `请求失败（${response.status}）`;
-    try {
-      const payload = await response.json();
-      message = payload.error?.message || payload.detail || message;
-    } catch {
-      // 非 JSON 错误使用通用提示。
-    }
-    throw new Error(message);
-  }
-  if (response.status === 204) {
-    return null;
-  }
-  return response.json();
-}
-
 function showToast(message) {
   elements.toast.textContent = message;
   elements.toast.hidden = false;
@@ -112,22 +62,46 @@ function showToast(message) {
   }, 3200);
 }
 
-function setConnection(connected) {
-  state.connected = connected;
-  elements.connectionDot.classList.toggle("is-online", connected);
-  elements.connectionLabel.textContent = connected ? "Demo 已连接" : "连接设置";
+const authClient = getAuthClient();
+
+function clearPrivateViewState() {
+  state.conversationId = null;
+  elements.entryContent.value = "";
+  elements.chatInput.value = "";
+  elements.entriesList.replaceChildren();
+  elements.messageList.replaceChildren();
+  elements.memoryList.replaceChildren();
+  elements.growthContent.replaceChildren();
+  elements.entryCount.textContent = "";
+  elements.chatEmpty.hidden = false;
 }
 
-async function checkConnection() {
-  try {
-    const demo = await api("/v1/demo");
-    setConnection(demo.mode === "demo" && demo.user?.synthetic === true);
-    return state.connected;
-  } catch {
-    setConnection(false);
-    return false;
-  }
-}
+const authView = createAuthView(
+  elements,
+  () => {
+    state.authenticated = false;
+    clearPrivateViewState();
+  },
+  showToast,
+);
+
+const apiClient = createApiClient({
+  origin: publicConfig.apiOrigin,
+  getAccessToken: () => authClient.getAccessToken(),
+  onUnauthorized: async () => {
+    try {
+      await authClient.signOut();
+    } catch {
+      // 本地 UI 仍然按未认证处理，服务端已经拒绝当前 token。
+    }
+    authView.showLogin("会话已失效，请重新登录。");
+  },
+  onUnavailable: (error) => {
+    authView.showUnavailable(error.message);
+  },
+});
+
+const api = (path, options) => apiClient.request(path, options);
 
 function emptyLine(message) {
   const paragraph = document.createElement("p");
@@ -320,15 +294,14 @@ async function sendChat(event) {
   let userMessageId = null;
   try {
     const conversationId = await ensureConversation();
-    const response = await fetch(
-      `${state.apiOrigin}/v1/conversations/${conversationId}/messages/stream`,
+    const response = await apiClient.fetch(
+      `/v1/conversations/${conversationId}/messages/stream`,
       {
         method: "POST",
         headers: { Accept: "text/event-stream", "Content-Type": "application/json" },
         body: JSON.stringify({ content }),
       },
     );
-    if (!response.ok) throw new Error(`对话请求失败（${response.status}）`);
     await streamSSE(response, (eventName, data) => {
       if (eventName === "message.start") {
         userMessageId = data.user_message_id;
@@ -456,9 +429,65 @@ async function loadGrowth() {
   }
 }
 
-function openSettings() {
-  elements.apiOrigin.value = state.apiOrigin;
-  elements.settingsDialog.showModal();
+async function showApplication() {
+  await api("/v1/auth/session");
+  state.authenticated = true;
+  elements.sessionLoading.hidden = true;
+  elements.loginView.hidden = true;
+  elements.authError.textContent = "";
+  elements.appShell.hidden = false;
+  setView(state.activeView);
+}
+
+async function submitLogin(event) {
+  event.preventDefault();
+  const button = elements.loginForm.querySelector("button");
+  button.disabled = true;
+  elements.authError.textContent = "";
+  try {
+    await authClient.signInWithPassword({
+      email: elements.loginEmail.value.trim(),
+      password: elements.loginPassword.value,
+    });
+    await showApplication();
+  } catch (error) {
+    if (error.status !== 401) {
+      elements.authError.textContent = error.message || "登录失败，请稍后再试。";
+    }
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function signOut() {
+  elements.signOut.disabled = true;
+  try {
+    await authClient.signOut();
+  } catch (error) {
+    showToast(error.message || "退出失败，请稍后再试。");
+    elements.signOut.disabled = false;
+    return;
+  }
+  authView.showLogin();
+  elements.signOut.disabled = false;
+}
+
+async function restoreSession() {
+  try {
+    const session = await authClient.getSession();
+    if (!session) {
+      authView.showLogin();
+      return;
+    }
+    await showApplication();
+  } catch (error) {
+    if (error.status !== 401) {
+      elements.sessionLoading.hidden = true;
+      elements.loginView.hidden = false;
+      elements.authError.textContent =
+        error.message || "暂时无法恢复会话，请稍后重试。";
+    }
+  }
 }
 
 elements.navButtons.forEach((button) => {
@@ -466,6 +495,8 @@ elements.navButtons.forEach((button) => {
 });
 elements.entryForm.addEventListener("submit", createEntry);
 elements.chatForm.addEventListener("submit", sendChat);
+elements.loginForm.addEventListener("submit", submitLogin);
+elements.signOut.addEventListener("click", signOut);
 elements.newConversation.addEventListener("click", () => {
   state.conversationId = null;
   elements.messageList.replaceChildren();
@@ -478,28 +509,18 @@ document.querySelectorAll(".suggestion").forEach((button) => {
     elements.chatInput.focus();
   });
 });
-document.querySelector("#open-settings").addEventListener("click", openSettings);
-elements.settingsForm.addEventListener("submit", async (event) => {
-  if (event.submitter?.value === "cancel") return;
-  event.preventDefault();
-  const previousOrigin = state.apiOrigin;
-  try {
-    state.apiOrigin = normalizeOrigin(elements.apiOrigin.value);
-    const connected = await checkConnection();
-    if (!connected) throw new Error("未检测到可用的 Dayfold Demo API。");
-    window.localStorage.setItem(STORAGE_KEY, state.apiOrigin);
-    elements.settingsDialog.close();
-    showToast("API 已连接");
-    setView(state.activeView);
-  } catch (error) {
-    state.apiOrigin = previousOrigin;
-    showToast(error.message);
+
+authClient.onAuthStateChange((event, session) => {
+  if (event === "SIGNED_OUT") {
+    authView.showLogin();
+  }
+  if (
+    session &&
+    ["INITIAL_SESSION", "SIGNED_IN", "TOKEN_REFRESHED"].includes(event)
+  ) {
+    elements.authError.textContent = "";
   }
 });
 
-state.apiOrigin = getInitialOrigin();
 setTodayDate();
-checkConnection().then((connected) => {
-  if (!connected) openSettings();
-});
-loadEntries();
+restoreSession();
