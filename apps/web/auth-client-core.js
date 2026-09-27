@@ -5,6 +5,19 @@ function unwrap(result) {
   return result?.data ?? null;
 }
 
+function isMissingCredentials(error) {
+  return error?.message?.toLowerCase().includes("credentials not found");
+}
+
+async function readSession(auth) {
+  const result = await auth.getSession();
+  if (isMissingCredentials(result?.error)) {
+    return null;
+  }
+  const data = unwrap(result);
+  return data?.session ?? null;
+}
+
 export function createAuthClientFactory(initialize) {
   let client;
 
@@ -20,13 +33,12 @@ export function createAuthClientFactory(initialize) {
 
     client = Object.freeze({
       async getSession() {
-        const data = unwrap(await auth.getSession());
-        return data?.session ?? null;
+        return readSession(auth);
       },
 
       async getAccessToken() {
-        const data = unwrap(await auth.getSession());
-        return data?.session?.access_token ?? null;
+        const session = await readSession(auth);
+        return session?.access_token ?? null;
       },
 
       async signInWithPassword(credentials) {

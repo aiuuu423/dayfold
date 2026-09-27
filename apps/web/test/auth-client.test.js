@@ -83,6 +83,21 @@ test("认证客户端支持邮箱密码登录、会话恢复和退出", async ()
   assert.equal(await client.getAccessToken(), null);
 });
 
+test("没有 CloudBase 凭证时会话恢复返回未登录而不是错误", async () => {
+  const missingCredentials = new Error("credentials not found");
+  const client = createAuthClientFactory(() => ({
+    auth: {
+      getSession: async () => ({ data: null, error: missingCredentials }),
+      signInWithPassword: async () => ({ data: null, error: null }),
+      signOut: async () => ({ error: null }),
+      onAuthStateChange() {},
+    },
+  }))({ env: "test", region: "ap-shanghai" });
+
+  assert.equal(await client.getSession(), null);
+  assert.equal(await client.getAccessToken(), null);
+});
+
 test("认证客户端传递会话事件并始终读取刷新后的 token", async () => {
   const fixture = cloudBaseFixture();
   const client = createAuthClientFactory(fixture.sdk.init)({
