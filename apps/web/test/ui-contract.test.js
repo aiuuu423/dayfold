@@ -4,13 +4,13 @@ import test from "node:test";
 
 const webRoot = new URL("../", import.meta.url);
 
-test("页面提供会话恢复、邮箱密码登录、错误提示和退出控件", async () => {
+test("页面提供会话恢复、用户名密码登录、错误提示和退出控件", async () => {
   const html = await readFile(new URL("index.html", webRoot), "utf8");
 
   assert.match(html, /id="session-loading"/);
   assert.match(html, /id="login-view"/);
   assert.match(html, /id="login-form"/);
-  assert.match(html, /id="login-email"[^>]*type="email"/s);
+  assert.match(html, /id="login-username"[^>]*autocomplete="username"/s);
   assert.match(html, /id="login-password"[^>]*type="password"/s);
   assert.match(html, /id="auth-error"[^>]*aria-live="polite"/s);
   assert.match(html, /id="sign-out"/);

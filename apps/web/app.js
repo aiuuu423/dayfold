@@ -13,7 +13,7 @@ const elements = {
   sessionLoading: document.querySelector("#session-loading"),
   loginView: document.querySelector("#login-view"),
   loginForm: document.querySelector("#login-form"),
-  loginEmail: document.querySelector("#login-email"),
+  loginUsername: document.querySelector("#login-username"),
   loginPassword: document.querySelector("#login-password"),
   authError: document.querySelector("#auth-error"),
   appShell: document.querySelector("#app-shell"),
@@ -446,7 +446,7 @@ async function submitLogin(event) {
   elements.authError.textContent = "";
   try {
     await authClient.signInWithPassword({
-      email: elements.loginEmail.value.trim(),
+      username: elements.loginUsername.value.trim(),
       password: elements.loginPassword.value,
     });
     await showApplication();

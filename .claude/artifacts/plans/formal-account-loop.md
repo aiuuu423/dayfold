@@ -16,7 +16,7 @@
 
 ### In scope
 
-- CloudBase Auth v2 邮箱密码登录。
+- CloudBase Auth v2 用户名密码登录。
 - CloudBase SDK 自动恢复和刷新会话。
 - 退出登录并清空当前浏览器会话。
 - 受邀账号在 CloudBase `public.users` 中预置内部 UUID 映射。
@@ -39,7 +39,7 @@
 ## Acceptance criteria
 
 - **AC-1**：未携带 Bearer Token 访问任一业务路由均返回 `401 INVALID_TOKEN`；`/health` 保持公开。
-- **AC-2**：受邀账号可通过邮箱密码登录，刷新页面后 SDK 恢复会话，退出后业务请求立即返回 `401`。
+- **AC-2**：受邀账号可通过用户名密码登录，刷新页面后 SDK 恢复会话，退出后业务请求立即返回 `401`。
 - **AC-3**：API 将 CloudBase `sub` 映射为 CloudBase `public.users.id` 内部 UUID；业务模块和 Repository 不接收前端提交的 `user_id`。
 - **AC-4**：仅 `status=active` 且 `deleted_at IS NULL` 的唯一映射可进入业务路由；缺失、重复、禁用和状态服务故障均拒绝。
 - **AC-5**：两个虚构账号分别创建 Entry、Conversation、Memory、Embedding 和 Growth 后，只能读取和修改自己的数据；跨租户对象访问统一返回 `404`。
@@ -150,7 +150,7 @@
 ### Phase 5：生产配置与数据切换
 
 25. 在 CloudBase 控制台：
-    - 启用邮箱密码登录；
+    - 启用用户名密码登录；
     - 配置 `www.dayfold.com.cn` 允许来源；
     - 核对当前 SDK 快速开始契约仅要求环境 ID 与地域；
     - 创建至少两个虚构受邀账号。
@@ -296,4 +296,6 @@
 - Runtime verification：CloudBase 控制台的 JS SDK 2.32 快速开始仅使用 `env` 与
   `region`，且当前环境无 Publishable Key 配置入口；实现据此删除空 `accessKey`，
   该变更由前端契约测试覆盖。
+- Runtime verification：当前环境启用的是“用户名密码登录”；新建用户虽可绑定邮箱，
+  但 `signInWithPassword` 必须提交 `username`。实现据此把邀请制入口从邮箱改为用户名。
 - Final iterations: 2 / 3

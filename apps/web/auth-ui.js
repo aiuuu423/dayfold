@@ -7,7 +7,7 @@ export function createAuthView(elements, resetPrivateState, notify = () => {}) {
       elements.loginView.hidden = false;
       elements.authError.textContent = message;
       elements.loginPassword.value = "";
-      elements.loginEmail.focus();
+      elements.loginUsername.focus();
     },
 
     showUnavailable(message = "服务暂时不可用，请稍后再试。") {

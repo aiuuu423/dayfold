@@ -149,11 +149,11 @@ sequenceDiagram
     API-->>W: response
 ```
 
-图 2：身份与内部用户映射。Production 使用 CloudBase Auth v2 邮箱注册、邮箱验证和邮箱密码登录；用户名密码测试用户只保留在 Preview。AccessToken 校验发生在请求进入业务模块之前；业务模块只能看到内部 `user_id`，不能使用前端提交的用户标识。`[Expert judgment]`
+图 2：身份与内部用户映射。首个 Production 私测版本使用 CloudBase Auth v2 用户名密码登录，由管理员创建受邀用户；公开邮箱注册、验证和找回密码延后。AccessToken 校验发生在请求进入业务模块之前；业务模块只能看到内部 `user_id`，不能使用前端提交的用户标识。`[Expert judgment]`
 
 ### 生产 Auth 策略
 
-1. 注册使用邮箱、密码和邮箱验证码，登录使用邮箱密码；找回密码通过邮箱验证完成。`[Research-backed]`
+1. 私测阶段关闭公开注册，管理员创建用户名密码账号；邮箱注册、验证和找回密码在公开测试前补齐。`[Architecture decision]`
 2. MVP 使用 CloudBase 内置邮件代发，不配置第三方 SMTP；发送效果、垃圾邮件率或品牌发件人不能达标时，再通过 ADR 切换自定义 SMTP。`[Research-backed]`
 3. Web 由 CloudBase Auth SDK 管理 AccessToken 和 RefreshToken；AccessToken 默认有效期为 2 小时。`[Research-backed]`
 4. FastAPI 通过 `CloudBaseAuthAdapter.verify_access_token()` 调用 CloudBase 支持的服务端验证路径，不在业务模块内解析未验证声明，也不依赖未承诺的 JWKS 结构。`[Expert judgment]`

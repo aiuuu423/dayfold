@@ -61,7 +61,7 @@ test("CloudBase app 和 auth 在重复获取客户端时只初始化一次", () 
   });
 });
 
-test("认证客户端支持邮箱密码登录、会话恢复和退出", async () => {
+test("认证客户端支持用户名密码登录、会话恢复和退出", async () => {
   const fixture = cloudBaseFixture();
   const client = createAuthClientFactory(fixture.sdk.init)({
     env: "dayfold-test",
@@ -70,11 +70,11 @@ test("认证客户端支持邮箱密码登录、会话恢复和退出", async ()
 
   assert.deepEqual(await client.getSession(), { access_token: "token-one" });
   await client.signInWithPassword({
-    email: "invited@example.com",
+    username: "dayfold-test1",
     password: "not-a-real-secret",
   });
   assert.deepEqual(fixture.calls.signIn, [
-    { email: "invited@example.com", password: "not-a-real-secret" },
+    { username: "dayfold-test1", password: "not-a-real-secret" },
   ]);
   assert.equal(await client.getAccessToken(), "token-one");
 
@@ -134,7 +134,7 @@ test("CloudBase 返回 error 时认证方法拒绝而不是伪装成功", async 
 
   await assert.rejects(client.getSession(), error);
   await assert.rejects(
-    client.signInWithPassword({ email: "a@example.com", password: "bad" }),
+    client.signInWithPassword({ username: "a-user", password: "bad" }),
     error,
   );
   await assert.rejects(client.signOut(), error);

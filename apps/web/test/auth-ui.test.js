@@ -9,7 +9,7 @@ function elementsFixture() {
     loginView: { hidden: true },
     authError: { textContent: "" },
     loginPassword: { value: "secret" },
-    loginEmail: { focusCalls: 0, focus() { this.focusCalls += 1; } },
+    loginUsername: { focusCalls: 0, focus() { this.focusCalls += 1; } },
     appShell: { hidden: false },
   };
 }
@@ -29,7 +29,7 @@ test("401 视图切换会清理私有页面状态并返回登录页", () => {
   assert.equal(elements.loginView.hidden, false);
   assert.equal(elements.loginPassword.value, "");
   assert.equal(elements.authError.textContent, "会话已失效，请重新登录。");
-  assert.equal(elements.loginEmail.focusCalls, 1);
+  assert.equal(elements.loginUsername.focusCalls, 1);
 });
 
 test("503 维护状态保留已登录应用和页面内容", () => {
