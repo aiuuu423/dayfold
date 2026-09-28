@@ -46,6 +46,14 @@ export function createAuthClientFactory(initialize) {
         return unwrap(await auth.signInWithPassword(credentials));
       },
 
+      async startEmailActivation(credentials) {
+        const data = unwrap(await auth.signUp(credentials));
+        if (typeof data?.verifyOtp !== "function") {
+          throw new Error("CloudBase 未返回邮箱验证码验证流程。");
+        }
+        return async (token) => unwrap(await data.verifyOtp({ token }));
+      },
+
       async signOut() {
         return unwrap(await auth.signOut());
       },

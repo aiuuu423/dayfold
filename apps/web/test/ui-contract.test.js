@@ -4,7 +4,7 @@ import test from "node:test";
 
 const webRoot = new URL("../", import.meta.url);
 
-test("页面提供会话恢复、用户名密码登录、错误提示和退出控件", async () => {
+test("页面提供会话恢复、密码登录、受邀账号激活和退出控件", async () => {
   const html = await readFile(new URL("index.html", webRoot), "utf8");
 
   assert.match(html, /id="session-loading"/);
@@ -13,6 +13,13 @@ test("页面提供会话恢复、用户名密码登录、错误提示和退出�
   assert.match(html, /id="login-username"[^>]*autocomplete="username"/s);
   assert.match(html, /id="login-password"[^>]*type="password"/s);
   assert.match(html, /id="auth-error"[^>]*aria-live="polite"/s);
+  assert.match(html, /id="show-activation"/);
+  assert.match(html, /id="activation-form"/);
+  assert.match(html, /id="activation-email"[^>]*type="email"/s);
+  assert.match(html, /id="activation-username"/);
+  assert.match(html, /id="activation-password"[^>]*type="password"/s);
+  assert.match(html, /id="activation-verify-form"/);
+  assert.match(html, /id="activation-code"[^>]*autocomplete="one-time-code"/s);
   assert.match(html, /id="sign-out"/);
 });
 

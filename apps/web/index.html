@@ -29,7 +29,7 @@
         <p class="tagline">写下今天。让重要的事，慢慢留下来。</p>
         <form id="login-form" class="auth-form">
           <h2 id="login-title">欢迎回来。</h2>
-          <label for="login-username">用户名</label>
+          <label for="login-username">邮箱或用户名</label>
           <input
             id="login-username"
             name="username"
@@ -47,6 +47,50 @@
           >
           <p id="auth-error" class="auth-error" aria-live="polite"></p>
           <button class="primary-action" type="submit">登录</button>
+        </form>
+        <button id="show-activation" class="outline-action" type="button">
+          首次使用？激活受邀账号
+        </button>
+        <form id="activation-form" class="auth-form" hidden>
+          <h2>激活受邀账号。</h2>
+          <label for="activation-email">受邀邮箱</label>
+          <input
+            id="activation-email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+          >
+          <label for="activation-username">用户名</label>
+          <input
+            id="activation-username"
+            name="username"
+            type="text"
+            autocomplete="username"
+            required
+          >
+          <label for="activation-password">设置密码</label>
+          <input
+            id="activation-password"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            required
+          >
+          <button class="primary-action" type="submit">发送邮箱验证码</button>
+        </form>
+        <form id="activation-verify-form" class="auth-form" hidden>
+          <h2>查收验证码。</h2>
+          <label for="activation-code">邮箱验证码</label>
+          <input
+            id="activation-code"
+            name="code"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            required
+          >
+          <button class="primary-action" type="submit">验证并登录</button>
         </form>
       </section>
     </main>

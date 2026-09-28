@@ -5,6 +5,12 @@ export function createAuthView(elements, resetPrivateState, notify = () => {}) {
       elements.sessionLoading.hidden = true;
       elements.appShell.hidden = true;
       elements.loginView.hidden = false;
+      if (elements.loginForm) elements.loginForm.hidden = false;
+      if (elements.showActivation) elements.showActivation.hidden = false;
+      if (elements.activationForm) elements.activationForm.hidden = true;
+      if (elements.activationVerifyForm) {
+        elements.activationVerifyForm.hidden = true;
+      }
       elements.authError.textContent = message;
       elements.loginPassword.value = "";
       elements.loginUsername.focus();

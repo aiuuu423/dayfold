@@ -6,7 +6,7 @@ import { createAuthClientFactory } from "../auth-client-core.js";
 function cloudBaseFixture() {
   let session = { access_token: "token-one" };
   const events = [];
-  const calls = { init: 0, signIn: [], signOut: 0 };
+  const calls = { init: 0, signIn: [], signUp: [], signOut: 0 };
   const auth = {
     async getSession() {
       return { data: { session }, error: null };
@@ -14,6 +14,18 @@ function cloudBaseFixture() {
     async signInWithPassword(credentials) {
       calls.signIn.push(credentials);
       return { data: { session }, error: null };
+    },
+    async signUp(credentials) {
+      calls.signUp.push(credentials);
+      return {
+        data: {
+          verifyOtp: async ({ token }) => ({
+            data: { session: { ...session, verified_with: token } },
+            error: null,
+          }),
+        },
+        error: null,
+      };
     },
     async signOut() {
       calls.signOut += 1;
@@ -86,12 +98,35 @@ test("认证客户端支持用户名密码登录、会话恢复和退出", async
   assert.equal(await client.getAccessToken(), null);
 });
 
+test("认证客户端支持邮箱 OTP 激活受邀账号", async () => {
+  const fixture = cloudBaseFixture();
+  const client = createAuthClientFactory(fixture.sdk.init)({
+    env: "dayfold-test",
+    region: "ap-shanghai",
+  });
+
+  const verify = await client.startEmailActivation({
+    email: "invitee@example.com",
+    username: "dayfold-test1",
+    password: "not-a-real-secret",
+  });
+  const verified = await verify("123456");
+
+  assert.deepEqual(fixture.calls.signUp, [{
+    email: "invitee@example.com",
+    username: "dayfold-test1",
+    password: "not-a-real-secret",
+  }]);
+  assert.equal(verified.session.verified_with, "123456");
+});
+
 test("没有 CloudBase 凭证时会话恢复返回未登录而不是错误", async () => {
   const missingCredentials = new Error("credentials not found");
   const client = createAuthClientFactory(() => ({
     auth: {
       getSession: async () => ({ data: null, error: missingCredentials }),
       signInWithPassword: async () => ({ data: null, error: null }),
+      signUp: async () => ({ data: null, error: null }),
       signOut: async () => ({ error: null }),
       onAuthStateChange() {},
     },
@@ -129,6 +164,7 @@ test("CloudBase 返回 error 时认证方法拒绝而不是伪装成功", async 
     auth: {
       getSession: async () => ({ data: null, error }),
       signInWithPassword: async () => ({ data: null, error }),
+      signUp: async () => ({ data: null, error }),
       signOut: async () => ({ error }),
       onAuthStateChange() {},
     },

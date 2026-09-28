@@ -7,6 +7,7 @@ const state = {
   conversationId: null,
   activeView: "today",
   authenticated: false,
+  verifyEmailActivation: null,
 };
 
 const elements = {
@@ -15,6 +16,13 @@ const elements = {
   loginForm: document.querySelector("#login-form"),
   loginUsername: document.querySelector("#login-username"),
   loginPassword: document.querySelector("#login-password"),
+  showActivation: document.querySelector("#show-activation"),
+  activationForm: document.querySelector("#activation-form"),
+  activationEmail: document.querySelector("#activation-email"),
+  activationUsername: document.querySelector("#activation-username"),
+  activationPassword: document.querySelector("#activation-password"),
+  activationVerifyForm: document.querySelector("#activation-verify-form"),
+  activationCode: document.querySelector("#activation-code"),
   authError: document.querySelector("#auth-error"),
   appShell: document.querySelector("#app-shell"),
   signOut: document.querySelector("#sign-out"),
@@ -445,8 +453,9 @@ async function submitLogin(event) {
   button.disabled = true;
   elements.authError.textContent = "";
   try {
+    const identity = elements.loginUsername.value.trim();
     await authClient.signInWithPassword({
-      username: elements.loginUsername.value.trim(),
+      ...(identity.includes("@") ? { email: identity } : { username: identity }),
       password: elements.loginPassword.value,
     });
     await showApplication();
@@ -454,6 +463,60 @@ async function submitLogin(event) {
     if (error.status !== 401) {
       elements.authError.textContent = error.message || "登录失败，请稍后再试。";
     }
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function showActivation() {
+  elements.authError.textContent = "";
+  elements.loginForm.hidden = true;
+  elements.showActivation.hidden = true;
+  elements.activationForm.hidden = false;
+  elements.activationVerifyForm.hidden = true;
+  elements.activationEmail.focus();
+}
+
+async function submitActivation(event) {
+  event.preventDefault();
+  const button = elements.activationForm.querySelector("button");
+  button.disabled = true;
+  elements.authError.textContent = "";
+  try {
+    state.verifyEmailActivation = await authClient.startEmailActivation({
+      email: elements.activationEmail.value.trim(),
+      username: elements.activationUsername.value.trim(),
+      password: elements.activationPassword.value,
+    });
+    elements.activationPassword.value = "";
+    elements.activationForm.hidden = true;
+    elements.activationVerifyForm.hidden = false;
+    elements.activationCode.focus();
+    showToast("验证码已发送，请查收邮箱。");
+  } catch (error) {
+    elements.authError.textContent =
+      error.message || "暂时无法发送验证码，请稍后再试。";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function verifyActivation(event) {
+  event.preventDefault();
+  const button = elements.activationVerifyForm.querySelector("button");
+  button.disabled = true;
+  elements.authError.textContent = "";
+  try {
+    if (!state.verifyEmailActivation) {
+      throw new Error("激活流程已过期，请重新发送验证码。");
+    }
+    await state.verifyEmailActivation(elements.activationCode.value.trim());
+    state.verifyEmailActivation = null;
+    elements.activationCode.value = "";
+    await showApplication();
+  } catch (error) {
+    elements.authError.textContent =
+      error.message || "验证码无效或已过期，请重试。";
   } finally {
     button.disabled = false;
   }
@@ -496,6 +559,9 @@ elements.navButtons.forEach((button) => {
 elements.entryForm.addEventListener("submit", createEntry);
 elements.chatForm.addEventListener("submit", sendChat);
 elements.loginForm.addEventListener("submit", submitLogin);
+elements.showActivation.addEventListener("click", showActivation);
+elements.activationForm.addEventListener("submit", submitActivation);
+elements.activationVerifyForm.addEventListener("submit", verifyActivation);
 elements.signOut.addEventListener("click", signOut);
 elements.newConversation.addEventListener("click", () => {
   state.conversationId = null;
