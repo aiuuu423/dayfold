@@ -57,6 +57,10 @@ test("生产 CSP 只允许 Dayfold API 和 CloudBase Gateway 连接", async () =
 
   assert.match(connectSrc, /'self'/);
   assert.match(connectSrc, /https:\/\/dayfold-api-global\.vercel\.app/);
+  assert.match(
+    connectSrc,
+    /https:\/\/dayfold-api-global-git-codex-formal-a-f84ad4-aiuuu423s-projects\.vercel\.app/,
+  );
   assert.match(connectSrc, /https:\/\/\*\.api\.tcloudbasegateway\.com/);
   assert.match(connectSrc, /https:\/\/\*\.tcb-api\.tencentcloudapi\.com/);
   assert.doesNotMatch(connectSrc, /(?:^|\s)http:(?:\s|$)/);

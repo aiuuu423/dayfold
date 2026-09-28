@@ -6,7 +6,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; connect-src 'self' https://dayfold-api-global.vercel.app https://*.api.tcloudbasegateway.com https://*.tcb-api.tencentcloudapi.com; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+          "value": "default-src 'self'; connect-src 'self' https://dayfold-api-global.vercel.app https://dayfold-api-global-git-codex-formal-a-f84ad4-aiuuu423s-projects.vercel.app https://*.api.tcloudbasegateway.com https://*.tcb-api.tencentcloudapi.com; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
         },
         {
           "key": "Referrer-Policy",
