@@ -13,6 +13,10 @@ test("页面提供会话恢复、密码登录、受邀账号激活和退出控�
   assert.match(html, /id="login-username"[^>]*autocomplete="username"/s);
   assert.match(html, /id="login-password"[^>]*type="password"/s);
   assert.match(html, /id="auth-error"[^>]*aria-live="polite"/s);
+  assert.ok(
+    html.indexOf('id="auth-error"') > html.indexOf("</form>", html.indexOf('id="login-form"')),
+    "认证错误应位于登录表单外，确保激活流程也可见",
+  );
   assert.match(html, /id="show-activation"/);
   assert.match(html, /id="activation-form"/);
   assert.match(html, /id="activation-email"[^>]*type="email"/s);
