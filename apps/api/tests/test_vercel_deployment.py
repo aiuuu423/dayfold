@@ -21,10 +21,10 @@ def test_vercel_entrypoint_exports_fastapi_app() -> None:
     assert isinstance(module.app, FastAPI)
 
 
-def test_vercel_configuration_targets_api_entrypoint() -> None:
+def test_vercel_configuration_targets_singapore_api_entrypoint() -> None:
     config = json.loads((REPOSITORY_ROOT / "vercel.json").read_text(encoding="utf-8"))
 
-    assert config["regions"] == ["hkg1"]
+    assert config["regions"] == ["sin1"]
     assert config["functions"]["app.py"]["maxDuration"] == 180
     assert "rewrites" not in config
 

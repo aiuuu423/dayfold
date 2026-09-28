@@ -1,5 +1,7 @@
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Any, Protocol
+from uuid import UUID
 
 import httpx
 
@@ -8,13 +10,41 @@ class UserStatusStoreUnavailable(Exception):
     pass
 
 
+@dataclass(frozen=True)
+class InternalUser:
+    id: str
+    auth_subject: str
+    status: str
+
+
 class UserStatusStore(Protocol):
-    async def get_status(
+    async def get_user(
         self,
         auth_subject: str,
         access_token: str,
-    ) -> str | None:
+    ) -> InternalUser | None:
         ...
+
+
+def _validated_user(
+    user_id: object,
+    returned_subject: object,
+    status: object,
+    expected_subject: str,
+) -> InternalUser:
+    if not isinstance(returned_subject, str) or returned_subject != expected_subject:
+        raise UserStatusStoreUnavailable
+    if status not in {"active", "deletion_pending", "disabled"}:
+        raise UserStatusStoreUnavailable
+    try:
+        normalized_id = str(UUID(str(user_id)))
+    except (ValueError, TypeError, AttributeError) as error:
+        raise UserStatusStoreUnavailable from error
+    return InternalUser(
+        id=normalized_id,
+        auth_subject=returned_subject,
+        status=status,
+    )
 
 
 class PostgresUserStatusStore:
@@ -26,11 +56,11 @@ class PostgresUserStatusStore:
         self._database_url = database_url
         self._connect = connect
 
-    async def get_status(
+    async def get_user(
         self,
         auth_subject: str,
         access_token: str,
-    ) -> str | None:
+    ) -> InternalUser | None:
         connect = self._connect
         if connect is None:
             from psycopg import AsyncConnection
@@ -46,27 +76,25 @@ class PostgresUserStatusStore:
                 async with connection.cursor() as cursor:
                     await cursor.execute(
                         """
-                        SELECT status
+                        SELECT id, auth_subject, status
                         FROM users
                         WHERE auth_subject = %s
                           AND deleted_at IS NULL
                         """,
                         (auth_subject,),
                     )
-                    row = await cursor.fetchone()
+                    rows = await cursor.fetchall()
         except Exception as error:
             raise UserStatusStoreUnavailable from error
 
-        if row is None or not isinstance(row[0], str):
+        if not rows:
             return None
-        return row[0]
+        if len(rows) != 1 or len(rows[0]) != 3:
+            raise UserStatusStoreUnavailable
+        return _validated_user(*rows[0], auth_subject)
 
 
 class CloudBaseHttpUserStatusStore:
-    _VALID_STATUSES = frozenset(
-        {"active", "deletion_pending", "disabled"}
-    )
-
     def __init__(
         self,
         environment_id: str,
@@ -77,11 +105,11 @@ class CloudBaseHttpUserStatusStore:
         )
         self._transport = transport
 
-    async def get_status(
+    async def get_user(
         self,
         auth_subject: str,
         access_token: str,
-    ) -> str | None:
+    ) -> InternalUser | None:
         try:
             async with httpx.AsyncClient(
                 base_url=self._base_url,
@@ -94,10 +122,10 @@ class CloudBaseHttpUserStatusStore:
                         "Authorization": f"Bearer {access_token}",
                     },
                     params={
-                        "select": "status",
+                        "select": "id,auth_subject,status",
                         "auth_subject": f"eq.{auth_subject}",
                         "deleted_at": "is.null",
-                        "limit": "1",
+                        "limit": "2",
                     },
                 )
         except httpx.HTTPError as error:
@@ -121,7 +149,9 @@ class CloudBaseHttpUserStatusStore:
         row = payload[0]
         if not isinstance(row, dict):
             raise UserStatusStoreUnavailable
-        status = row.get("status")
-        if status not in self._VALID_STATUSES:
-            raise UserStatusStoreUnavailable
-        return status
+        return _validated_user(
+            row.get("id"),
+            row.get("auth_subject"),
+            row.get("status"),
+            auth_subject,
+        )

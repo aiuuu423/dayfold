@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Dayfold Portfolio Demo：记录今天，让 AI 记住真正重要的事。"
+      content="Dayfold：记录今天，让重要的事慢慢留下来。"
     >
     <title>Dayfold</title>
     <link
@@ -13,20 +13,96 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M5 23c7-2 10-8 16-10 3-1 5 0 7-3' fill='none' stroke='%23416f87' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"
     >
     <link rel="stylesheet" href="./styles.css">
-    <script src="./app.js" defer></script>
+    <script type="module" src="./app.js"></script>
   </head>
   <body>
-    <main class="page">
+    <main id="session-loading" class="page auth-stage" aria-live="polite">
+      <p class="eyebrow">Dayfold</p>
+      <h1>正在翻开你的记录……</h1>
+      <p class="tagline">正在恢复会话。</p>
+    </main>
+
+    <main id="login-view" class="page auth-stage" hidden>
+      <section class="auth-panel" aria-labelledby="login-title">
+        <p class="eyebrow">A private place to remember</p>
+        <h1>Dayfold</h1>
+        <p class="tagline">写下今天。让重要的事，慢慢留下来。</p>
+        <form id="login-form" class="auth-form">
+          <h2 id="login-title">欢迎回来。</h2>
+          <label for="login-username">邮箱或用户名</label>
+          <input
+            id="login-username"
+            name="username"
+            type="text"
+            autocomplete="username"
+            required
+          >
+          <label for="login-password">密码</label>
+          <input
+            id="login-password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          >
+          <button class="primary-action" type="submit">登录</button>
+        </form>
+        <p id="auth-error" class="auth-error" aria-live="polite"></p>
+        <button id="show-activation" class="outline-action" type="button">
+          首次使用？激活受邀账号
+        </button>
+        <form id="activation-form" class="auth-form" hidden>
+          <h2>激活受邀账号。</h2>
+          <label for="activation-email">受邀邮箱</label>
+          <input
+            id="activation-email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+          >
+          <label for="activation-username">用户名</label>
+          <input
+            id="activation-username"
+            name="username"
+            type="text"
+            autocomplete="username"
+            required
+          >
+          <label for="activation-password">设置密码</label>
+          <input
+            id="activation-password"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            required
+          >
+          <button class="primary-action" type="submit">发送邮箱验证码</button>
+        </form>
+        <form id="activation-verify-form" class="auth-form" hidden>
+          <h2>查收验证码。</h2>
+          <label for="activation-code">邮箱验证码</label>
+          <input
+            id="activation-code"
+            name="code"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            required
+          >
+          <button class="primary-action" type="submit">验证并登录</button>
+        </form>
+      </section>
+    </main>
+
+    <main id="app-shell" class="page" hidden>
       <header class="masthead">
         <div>
-          <p class="eyebrow">Portfolio memory demo</p>
+          <p class="eyebrow">A private place to remember</p>
           <h1>Dayfold</h1>
           <p class="tagline">写下今天。让重要的事，慢慢留下来。</p>
         </div>
-        <button id="open-settings" class="connection-button" type="button">
-          <span id="connection-dot" class="connection-dot"></span>
-          <span id="connection-label">连接设置</span>
-        </button>
+        <button id="sign-out" class="connection-button" type="button">退出登录</button>
       </header>
 
       <nav class="notebook-tabs" aria-label="主要导航">
@@ -116,38 +192,10 @@
       </section>
 
       <footer>
-        <p>Demo only. Do not enter sensitive personal information.</p>
-        <span>Dayfold / synthetic data only</span>
+        <p>你的记录只属于当前账号。</p>
+        <span>Dayfold</span>
       </footer>
     </main>
-
-    <dialog id="settings-dialog">
-      <form id="settings-form" method="dialog">
-        <div class="dialog-head">
-          <div>
-            <p class="section-label">Connection</p>
-            <h3>连接 Dayfold API</h3>
-          </div>
-          <button class="icon-button" value="cancel" aria-label="关闭" type="submit">×</button>
-        </div>
-        <label for="api-origin">API Origin</label>
-        <input
-          id="api-origin"
-          name="api-origin"
-          type="url"
-          inputmode="url"
-          placeholder="http://127.0.0.1:8001"
-          required
-        >
-        <p class="field-help">只保存在当前浏览器，不包含任何 API Key。</p>
-        <div class="dialog-actions">
-          <button class="outline-action" value="cancel" type="submit">取消</button>
-          <button id="save-settings" class="primary-action" value="default" type="submit">
-            保存并连接
-          </button>
-        </div>
-      </form>
-    </dialog>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   </body>

@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from pathlib import Path
 
 import pytest
 
@@ -11,6 +12,16 @@ from apps.api.database import (
     initialize_schema,
     mapping_row_factory,
 )
+
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def test_production_environment_example_uses_remote_turso_storage():
+    example = (REPO_ROOT / ".env.example").read_text(encoding="utf-8")
+
+    assert "DAYFOLD_DEMO_MODE=false" in example
+    assert "DAYFOLD_DATA_BACKEND=turso" in example
 
 
 def test_certificate_store_uses_certifi_when_not_explicit(monkeypatch):

@@ -44,7 +44,7 @@ class CloudBaseAuthAdapter:
                 timeout=3.0,
             ) as client:
                 response = await client.get(
-                    "/auth/v2/user/me",
+                    "/auth/v1/user/me",
                     headers={"Authorization": f"Bearer {token}"},
                 )
         except httpx.HTTPError as error:

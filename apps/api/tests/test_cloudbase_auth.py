@@ -17,7 +17,7 @@ def verify(adapter: CloudBaseAuthAdapter, token: str):
 
 def test_valid_token_returns_stable_verified_identity():
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/auth/v2/user/me"
+        assert request.url.path == "/auth/v1/user/me"
         assert request.headers["authorization"] == "Bearer opaque-test-token"
         return httpx.Response(
             200,

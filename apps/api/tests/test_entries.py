@@ -4,9 +4,9 @@ from pathlib import Path
 import httpx
 import pytest
 
-from apps.api.demo import DemoSettings
+from apps.api.auth.context import AuthContext
 from apps.api.entries import SqliteEntryRepository
-from apps.api.main import app, get_demo_settings, get_entry_repository
+from apps.api.main import app, get_auth_context, get_entry_repository
 
 
 DEMO_USER_ID = "00000000-0000-4000-8000-000000000001"
@@ -37,9 +37,11 @@ def repository(tmp_path: Path):
 
 
 @pytest.fixture(autouse=True)
-def demo_dependencies(repository):
-    app.dependency_overrides[get_demo_settings] = lambda: DemoSettings(
-        user_id=DEMO_USER_ID
+def auth_dependencies(repository):
+    app.dependency_overrides[get_auth_context] = lambda: AuthContext(
+        user_id=DEMO_USER_ID,
+        auth_subject="fictional-user",
+        email="fictional@example.test",
     )
     app.dependency_overrides[get_entry_repository] = lambda: repository
     yield
@@ -124,6 +126,30 @@ def test_repository_never_reads_or_changes_another_users_entry(repository):
         is None
     )
     assert run(repository.delete(DEMO_USER_ID, entry.id)) is False
+
+
+def test_authenticated_user_cannot_read_another_users_entry(repository):
+    entry = run(
+        repository.create(
+            OTHER_USER_ID,
+            "另一个用户的记录",
+            "2026-09-23T09:30:00Z",
+        )
+    )
+
+    response = request("GET", f"/v1/entries/{entry.id}")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "RESOURCE_NOT_FOUND"
+
+
+def test_entries_require_authentication():
+    app.dependency_overrides.pop(get_auth_context)
+
+    response = request("GET", "/v1/entries")
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "INVALID_TOKEN"
 
 
 def test_create_rejects_client_supplied_user_id(repository):
