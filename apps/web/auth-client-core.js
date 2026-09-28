@@ -27,7 +27,6 @@ export function createAuthClientFactory(initialize) {
     const app = initialize({
       env: config.env,
       region: config.region,
-      accessKey: config.publishableKey,
       auth: { detectSessionInUrl: false },
     });
     const auth = app.auth;
