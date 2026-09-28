@@ -1,10 +1,30 @@
 # Dayfold 正式账号闭环实施方案
 
-> Status: APPROVED
+> Status: IMPLEMENTED — PREVIEW ENTRY ISOLATION VERIFIED; PRODUCTION GATE PENDING
 > Source: `docs/p2/dayfold-p2-technical-specification.md`、`docs/superpowers/specs/2026-09-23-cloudbase-http-user-status-design.md`、用户当前请求
 > Mode: --deliberate
 > Iterations: 2 / 3
-> Last updated: 2026-09-25
+> Last updated: 2026-09-28
+
+## Preview acceptance record
+
+- 两个 CloudBase 受邀账号均为 `active`，并映射到不同内部 UUID。
+- 账号 A 创建 Entry 后，账号 B 的 Today 为 `0 条` 且不含 A 标记。
+- 账号 B 创建 Entry 后，账号 A 仅看到 A 标记且不含 B 标记。
+- 两个账号的合成 Entry 均已删除，最终 Today 为 `0 条`。
+- 本轮合成内容未形成长期 Memory；账号 B Memory 页面为空。
+- 未认证 `/v1/auth/session` 与 `/v1/entries` 均返回 `401`。
+- 刷新恢复、退出失效、用户名登录与内部 UUID 映射均已验证。
+- API 测试 `118 passed`，Web 测试 `18 passed`，Vite build 与 Python
+  compileall 通过。
+
+Production Gate 尚未满足：
+
+- 尚未用双账号逐项执行 Conversation、Memory、Embedding、Recall、Growth
+  的浏览器跨租户矩阵。
+- 标准方舟 Preview 曾完成真实 Memory + Embedding E2E，但后续请求仍出现间歇性
+  `LLM_TIMEOUT`，正式发布前需达到可接受稳定性。
+- Production 环境变量、备份、固定 Demo User 数据清理和发布后观察尚未执行。
 
 ## Requirements summary
 
