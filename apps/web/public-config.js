@@ -5,5 +5,6 @@ export const publicConfig = Object.freeze({
   cloudbase: Object.freeze({
     env: import.meta.env.VITE_CLOUDBASE_ENV_ID || "",
     region: import.meta.env.VITE_CLOUDBASE_REGION || "ap-shanghai",
+    publishableKey: import.meta.env.VITE_CLOUDBASE_PUBLISHABLE_KEY || "",
   }),
 });

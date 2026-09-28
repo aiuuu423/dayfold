@@ -31,8 +31,9 @@ test("公开配置只使用浏览器可公开的 Vite 变量", async () => {
 
   assert.match(config, /VITE_CLOUDBASE_ENV_ID/);
   assert.match(config, /VITE_CLOUDBASE_REGION/);
+  assert.match(config, /VITE_CLOUDBASE_PUBLISHABLE_KEY/);
   assert.match(config, /VITE_DAYFOLD_API_ORIGIN/);
-  assert.doesNotMatch(config, /SECRET|REFRESH_TOKEN|API_KEY|accessKey/);
+  assert.doesNotMatch(config, /SECRET|REFRESH_TOKEN|SERVER_API_KEY/);
 });
 
 test("生产 CSP 只允许 Dayfold API 和 CloudBase Gateway 连接", async () => {
@@ -63,6 +64,7 @@ test("Web 开发与部署配置使用 apps/web 下的 Vite 环境文件", async 
   assert.equal(packageJson.scripts.preview, "vite preview");
   assert.match(envExample, /VITE_DAYFOLD_API_ORIGIN=/);
   assert.match(envExample, /VITE_CLOUDBASE_ENV_ID=/);
-  assert.doesNotMatch(envExample, /PUBLISHABLE_KEY|API_KEY|SECRET/);
+  assert.match(envExample, /VITE_CLOUDBASE_PUBLISHABLE_KEY=/);
+  assert.doesNotMatch(envExample, /SERVER_API_KEY|SECRET|REFRESH_TOKEN/);
   assert.match(gitignore, /!\.env\.example/);
 });

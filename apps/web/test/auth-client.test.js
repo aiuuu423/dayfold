@@ -48,6 +48,7 @@ test("CloudBase app 和 auth 在重复获取客户端时只初始化一次", () 
   const config = {
     env: "dayfold-test",
     region: "ap-shanghai",
+    publishableKey: "public-client-key",
   };
 
   const first = getClient(config);
@@ -56,7 +57,9 @@ test("CloudBase app 和 auth 在重复获取客户端时只初始化一次", () 
   assert.equal(first, second);
   assert.equal(fixture.calls.init, 1);
   assert.deepEqual(fixture.calls.config, {
-    ...config,
+    env: config.env,
+    region: config.region,
+    accessKey: config.publishableKey,
     auth: { detectSessionInUrl: false },
   });
 });
