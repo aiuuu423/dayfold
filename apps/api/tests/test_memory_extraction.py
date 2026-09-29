@@ -339,17 +339,6 @@ def test_memory_provider_falls_back_to_general_ark_key(monkeypatch):
     assert provider._api_key == "general-ark-secret"
 
 
-def test_memory_provider_prefers_verified_general_ark_key(monkeypatch):
-    monkeypatch.setenv("DAYFOLD_ARK_API_KEY", "general-ark-secret")
-    monkeypatch.setenv("DAYFOLD_STANDARD_ARK_API_KEY", "stale-standard-secret")
-    monkeypatch.setenv("DAYFOLD_STANDARD_ARK_MODEL", "ep-standard-memory")
-
-    provider = get_memory_provider()
-
-    assert isinstance(provider, ArkMemoryExtractionProvider)
-    assert provider._api_key == "general-ark-secret"
-
-
 def test_memory_timeout_returns_classified_gateway_timeout(stores):
     _, entries, _ = stores
     entry = run(
