@@ -160,6 +160,23 @@ console.log(getInitialOrigin());
     )
 
 
+def test_today_memory_retry_is_localized_and_reuses_saved_entry():
+    html = (WEB_ROOT / "index.html").read_text(encoding="utf-8")
+    javascript = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
+
+    assert 'id="retry-extraction"' in html
+    assert "重新理解" in html
+    assert '"LLM_TIMEOUT": "AI 暂时没有回应，请重新理解这条记录。"' in javascript
+    assert "pendingEntryId" in javascript
+
+    retry_handler = javascript.split(
+        "async function retryEntryExtraction",
+        1,
+    )[1].split("\n}", 1)[0]
+    assert "extractEntryMemories(state.pendingEntryId)" in retry_handler
+    assert 'api("/v1/entries"' not in retry_handler
+
+
 def test_static_probe_contains_no_secret_or_fixed_deployment_value():
     combined = "\n".join(
         path.read_text(encoding="utf-8")

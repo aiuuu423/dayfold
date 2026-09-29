@@ -3,9 +3,22 @@ const LEGACY_STORAGE_KEYS = ["dayfold-portfolio-api-origin"];
 const DEFAULT_LOCAL_API = "http://127.0.0.1:8001";
 const PRODUCTION_API = "https://dayfold-api-global.vercel.app";
 
+const MEMORY_EXTRACTION_ERRORS = {
+  "LLM_TIMEOUT": "AI 暂时没有回应，请重新理解这条记录。",
+  "LLM_RATE_LIMITED": "AI 暂时有点忙，请稍后重新理解这条记录。",
+  "LLM_AUTHENTICATION_FAILED": "AI 服务暂时无法连接，请稍后再试。",
+  "LLM_REQUEST_REJECTED": "AI 暂时无法理解这条记录，请稍后再试。",
+  "LLM_UPSTREAM_ERROR": "AI 服务暂时不稳定，请重新理解这条记录。",
+  "LLM_UNAVAILABLE": "AI 服务暂时不可用，请重新理解这条记录。",
+  "INVALID_MODEL_OUTPUT": "AI 没有正确理解这条记录，请重新试一次。",
+  "EMBEDDING_UNAVAILABLE": "记录已理解，但记忆索引暂时不可用，请重新试一次。",
+  "INVALID_EMBEDDING": "记录已理解，但记忆索引生成失败，请重新试一次。",
+};
+
 const state = {
   apiOrigin: "",
   conversationId: null,
+  pendingEntryId: null,
   activeView: "today",
   connected: false,
 };
@@ -17,6 +30,7 @@ const elements = {
   entryForm: document.querySelector("#entry-form"),
   entryContent: document.querySelector("#entry-content"),
   entryStatus: document.querySelector("#entry-status"),
+  retryExtraction: document.querySelector("#retry-extraction"),
   entryCount: document.querySelector("#entry-count"),
   entriesList: document.querySelector("#entries-list"),
   newConversation: document.querySelector("#new-conversation"),
@@ -89,13 +103,17 @@ async function api(path, options = {}) {
   });
   if (!response.ok) {
     let message = `请求失败（${response.status}）`;
+    let code = "REQUEST_FAILED";
     try {
       const payload = await response.json();
+      code = payload.error?.code || code;
       message = payload.error?.message || payload.detail || message;
     } catch {
       // 非 JSON 错误使用通用提示。
     }
-    throw new Error(message);
+    const error = new Error(message);
+    error.code = code;
+    throw error;
   }
   if (response.status === 204) {
     return null;
@@ -227,6 +245,29 @@ async function loadEntries() {
   }
 }
 
+function setExtractionRetry(error) {
+  const detail = MEMORY_EXTRACTION_ERRORS[error.code]
+    || "AI 暂时没有理解成功，请重新理解这条记录。";
+  elements.entryStatus.classList.add("is-error");
+  elements.entryStatus.textContent = `记录已保存。${detail}`;
+  elements.retryExtraction.hidden = false;
+}
+
+async function extractEntryMemories(entryId) {
+  const extraction = await api("/v1/memory-extractions", {
+    method: "POST",
+    body: JSON.stringify({ source_type: "entry", source_id: entryId }),
+  });
+  if (extraction.memories.length) {
+    await api("/v1/memory-embeddings/sync", { method: "POST" });
+    elements.entryStatus.textContent = `已记住 ${extraction.memories.length} 件事`;
+  } else {
+    elements.entryStatus.textContent = "已保存，没有需要长期记住的内容";
+  }
+  state.pendingEntryId = null;
+  elements.retryExtraction.hidden = true;
+}
+
 async function createEntry(event) {
   event.preventDefault();
   const button = elements.entryForm.querySelector("button");
@@ -244,23 +285,34 @@ async function createEntry(event) {
       }),
     });
     elements.entryContent.value = "";
+    state.pendingEntryId = entry.id;
     elements.entryStatus.textContent = "已保存，正在理解这条记录……";
-    const extraction = await api("/v1/memory-extractions", {
-      method: "POST",
-      body: JSON.stringify({ source_type: "entry", source_id: entry.id }),
-    });
-    if (extraction.memories.length) {
-      await api("/v1/memory-embeddings/sync", { method: "POST" });
-      elements.entryStatus.textContent = `已记住 ${extraction.memories.length} 件事`;
-    } else {
-      elements.entryStatus.textContent = "已保存，没有需要长期记住的内容";
-    }
+    await extractEntryMemories(entry.id);
     await loadEntries();
   } catch (error) {
-    elements.entryStatus.classList.add("is-error");
-    elements.entryStatus.textContent = error.message;
+    if (state.pendingEntryId) {
+      setExtractionRetry(error);
+      await loadEntries();
+    } else {
+      elements.entryStatus.classList.add("is-error");
+      elements.entryStatus.textContent = error.message;
+    }
   } finally {
     button.disabled = false;
+  }
+}
+
+async function retryEntryExtraction() {
+  if (!state.pendingEntryId) return;
+  elements.retryExtraction.disabled = true;
+  elements.entryStatus.classList.remove("is-error");
+  elements.entryStatus.textContent = "正在重新理解这条记录……";
+  try {
+    await extractEntryMemories(state.pendingEntryId);
+  } catch (error) {
+    setExtractionRetry(error);
+  } finally {
+    elements.retryExtraction.disabled = false;
   }
 }
 
@@ -465,6 +517,7 @@ elements.navButtons.forEach((button) => {
   button.addEventListener("click", () => setView(button.dataset.viewTarget));
 });
 elements.entryForm.addEventListener("submit", createEntry);
+elements.retryExtraction.addEventListener("click", retryEntryExtraction);
 elements.chatForm.addEventListener("submit", sendChat);
 elements.newConversation.addEventListener("click", () => {
   state.conversationId = null;

@@ -45,8 +45,10 @@ class StubMemoryProvider:
     def __init__(self, operations):
         self.operations = operations
         self.source_content = None
+        self.calls = 0
 
     async def extract(self, source_content):
+        self.calls += 1
         self.source_content = source_content
         return self.operations
 
@@ -113,6 +115,46 @@ def test_extracts_valid_memories_and_binds_entry_source(stores):
     assert run(memories.list_sources(DEMO_USER_ID, stored[0].id)) == [
         {"source_type": "entry", "source_id": entry.id}
     ]
+
+
+def test_retry_returns_existing_memories_without_duplicate_storage(stores):
+    _, entries, memories = stores
+    entry = run(
+        entries.create(
+            DEMO_USER_ID,
+            "我决定用三个小实验探索 AI Agent 产品评测。",
+            "2026-09-23T09:30:00Z",
+        )
+    )
+    provider = StubMemoryProvider(
+        [
+            {
+                "op": "upsert",
+                "type": "goal",
+                "content": "用三个小实验探索 AI Agent 产品评测",
+                "confidence": 0.95,
+            }
+        ]
+    )
+    app.dependency_overrides[get_memory_provider] = lambda: provider
+
+    first = request(
+        "POST",
+        "/v1/memory-extractions",
+        json={"source_type": "entry", "source_id": entry.id},
+    )
+    app.dependency_overrides[get_memory_provider] = lambda: None
+    retry = request(
+        "POST",
+        "/v1/memory-extractions",
+        json={"source_type": "entry", "source_id": entry.id},
+    )
+
+    assert first.status_code == 201
+    assert retry.status_code == 201
+    assert retry.json()["memories"] == first.json()["memories"]
+    assert provider.calls == 1
+    assert len(run(memories.list(DEMO_USER_ID))) == 1
 
 
 def test_invalid_model_output_is_rejected_without_partial_storage(stores):

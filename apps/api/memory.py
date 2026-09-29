@@ -183,6 +183,46 @@ class SqliteMemoryRepository:
         row = await asyncio.to_thread(select)
         return row["content"] if row else None
 
+    async def list_for_source(
+        self,
+        user_id: str,
+        source_type: Literal["entry", "message"],
+        source_id: str,
+    ) -> list[Memory]:
+        await self.initialize()
+
+        def select() -> list[sqlite3.Row]:
+            with self._connect() as connection:
+                return connection.execute(
+                    """
+                    SELECT m.id, m.type, m.content, m.confidence, m.status,
+                           m.created_at, m.updated_at
+                    FROM memories AS m
+                    JOIN memory_sources AS s
+                      ON s.memory_id = m.id AND s.user_id = m.user_id
+                    WHERE m.user_id = ?
+                      AND s.source_type = ?
+                      AND s.source_id = ?
+                      AND m.deleted_at IS NULL
+                    ORDER BY m.created_at, m.rowid
+                    """,
+                    (user_id, source_type, source_id),
+                ).fetchall()
+
+        rows = await asyncio.to_thread(select)
+        return [
+            Memory(
+                id=row["id"],
+                type=row["type"],
+                content=row["content"],
+                confidence=row["confidence"],
+                status=row["status"],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+            )
+            for row in rows
+        ]
+
     async def store_extraction(
         self,
         user_id: str,

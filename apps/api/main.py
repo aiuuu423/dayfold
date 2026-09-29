@@ -696,12 +696,6 @@ async def extract_memories(
     unavailable = require_demo(settings)
     if unavailable:
         return unavailable
-    if provider is None:
-        return resource_error(
-            503,
-            "LLM_UNAVAILABLE",
-            "The AI service is unavailable.",
-        )
     source_content = await repository.get_source_content(
         settings.user_id,
         payload.source_type,
@@ -709,6 +703,22 @@ async def extract_memories(
     )
     if source_content is None:
         return resource_error(404, "RESOURCE_NOT_FOUND", "Resource was not found.")
+    existing_memories = await repository.list_for_source(
+        settings.user_id,
+        payload.source_type,
+        payload.source_id,
+    )
+    if existing_memories:
+        return {
+            "source": {"type": payload.source_type, "id": payload.source_id},
+            "memories": [memory.public_view() for memory in existing_memories],
+        }
+    if provider is None:
+        return resource_error(
+            503,
+            "LLM_UNAVAILABLE",
+            "The AI service is unavailable.",
+        )
     try:
         operations = await provider.extract(source_content)
         memories = await repository.store_extraction(

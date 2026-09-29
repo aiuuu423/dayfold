@@ -54,7 +54,12 @@
             required
           ></textarea>
           <div class="form-foot">
-            <span id="entry-status" class="inline-status" aria-live="polite"></span>
+            <span class="entry-feedback">
+              <span id="entry-status" class="inline-status" aria-live="polite"></span>
+              <button id="retry-extraction" class="outline-action" type="button" hidden>
+                重新理解
+              </button>
+            </span>
             <button class="primary-action" type="submit">保存这一页</button>
           </div>
         </form>

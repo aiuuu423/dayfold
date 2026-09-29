@@ -266,6 +266,18 @@ input::placeholder {
   padding-top: 12px;
 }
 
+.entry-feedback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.entry-feedback .outline-action {
+  flex: 0 0 auto;
+  padding: 5px 11px;
+  font-size: 0.72rem;
+}
+
 .primary-action,
 .outline-action,
 .suggestion,
