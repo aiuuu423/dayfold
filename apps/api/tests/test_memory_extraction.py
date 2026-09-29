@@ -309,6 +309,7 @@ def test_ark_memory_provider_parses_validated_json_response():
 
 def test_memory_provider_requires_standard_ark_configuration(monkeypatch):
     monkeypatch.setenv("DAYFOLD_LLM_API_KEY", "agent-plan-secret")
+    monkeypatch.delenv("DAYFOLD_ARK_API_KEY", raising=False)
     monkeypatch.delenv("DAYFOLD_STANDARD_ARK_API_KEY", raising=False)
     monkeypatch.delenv("DAYFOLD_STANDARD_ARK_MODEL", raising=False)
 
@@ -325,6 +326,28 @@ def test_memory_provider_requires_standard_ark_configuration(monkeypatch):
         provider._endpoint
         == "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
     )
+
+
+def test_memory_provider_falls_back_to_general_ark_key(monkeypatch):
+    monkeypatch.delenv("DAYFOLD_STANDARD_ARK_API_KEY", raising=False)
+    monkeypatch.setenv("DAYFOLD_ARK_API_KEY", "general-ark-secret")
+    monkeypatch.setenv("DAYFOLD_STANDARD_ARK_MODEL", "ep-standard-memory")
+
+    provider = get_memory_provider()
+
+    assert isinstance(provider, ArkMemoryExtractionProvider)
+    assert provider._api_key == "general-ark-secret"
+
+
+def test_memory_provider_prefers_verified_general_ark_key(monkeypatch):
+    monkeypatch.setenv("DAYFOLD_ARK_API_KEY", "general-ark-secret")
+    monkeypatch.setenv("DAYFOLD_STANDARD_ARK_API_KEY", "stale-standard-secret")
+    monkeypatch.setenv("DAYFOLD_STANDARD_ARK_MODEL", "ep-standard-memory")
+
+    provider = get_memory_provider()
+
+    assert isinstance(provider, ArkMemoryExtractionProvider)
+    assert provider._api_key == "general-ark-secret"
 
 
 def test_memory_timeout_returns_classified_gateway_timeout(stores):
