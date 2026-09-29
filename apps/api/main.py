@@ -176,9 +176,7 @@ def get_memory_repository() -> SqliteMemoryRepository:
 
 
 def get_memory_provider() -> MemoryExtractionProvider | None:
-    api_key = os.getenv("DAYFOLD_STANDARD_ARK_API_KEY") or os.getenv(
-        "DAYFOLD_ARK_API_KEY"
-    )
+    api_key = os.getenv("DAYFOLD_STANDARD_ARK_API_KEY")
     model = os.getenv("DAYFOLD_STANDARD_ARK_MODEL")
     if not api_key or not model:
         return None
