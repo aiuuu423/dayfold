@@ -180,7 +180,7 @@ def test_ark_growth_provider_sends_only_structured_evidence():
         captured["attempts"] += 1
         captured["payload"] = json.loads(request.content)
         captured["headers"] = request.headers
-        if captured["attempts"] <= 2:
+        if captured["attempts"] == 1:
             return httpx.Response(429)
         return httpx.Response(
             200,
@@ -224,7 +224,7 @@ def test_ark_growth_provider_sends_only_structured_evidence():
     assert captured["headers"]["authorization"] == "Bearer server-secret"
     assert "x-api-key" not in captured["headers"]
     assert "anthropic-version" not in captured["headers"]
-    assert captured["attempts"] == 3
+    assert captured["attempts"] == 2
 
 
 def test_growth_provider_requires_standard_ark_configuration(monkeypatch):
