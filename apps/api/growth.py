@@ -307,11 +307,12 @@ class ArkGrowthProvider:
         try:
             async with httpx.AsyncClient(
                 transport=self._transport,
-                timeout=httpx.Timeout(80.0, connect=10.0),
+                timeout=httpx.Timeout(58.0, connect=10.0),
             ) as client:
                 response = await bounded_post(
                     client,
                     self._endpoint,
+                    max_attempts=3,
                     headers={
                         "Authorization": f"Bearer {self._api_key}",
                         "Content-Type": "application/json",
