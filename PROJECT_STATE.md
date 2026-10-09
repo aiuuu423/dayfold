@@ -1,159 +1,144 @@
 # Dayfold Project State
 
-更新时间：2026-09-25  
-当前模式：Portfolio MVP Acceleration  
-当前位置：Portfolio MVP / Step 9 — Deployment / Full AI E2E Passed
+更新时间：2026-10-09
+当前阶段：Portfolio MVP / Phase 10 — Post-launch Stabilization
+状态：公开 Demo 已上线；主链路已实现；Growth 生产调用仍有阻断问题
+
+## 文档定位
+
+本文件是 Dayfold **当前项目状态的唯一事实源**。
+
+- [`README.md`](README.md)：面向公开访问者的简要介绍。
+- `docs/p0` 至 `docs/p4`：对应日期的设计、评审和交付快照。
+- `.claude/artifacts/`：修复、QA 和决策证据。
+- 仓库中不存在 `MASTER.md`；后续不再使用该名称描述当前状态。
+
+历史文档中的测试数量、架构方案和部署结论不得覆盖本文件的最新状态。
 
 ## 当前目标
 
-尽快交付可在线访问、可真实交互的 AI Memory Demo。完成标准是：
+交付可在线访问、可真实交互、仅使用合成数据的 AI Memory Portfolio Demo：
 
 ```text
-Today → Chat → Memory Extraction → Embedding → Vector Retrieval
-→ AI Recall → Evidence-based Growth
+Today → Memory Extraction → Embedding → Vector Retrieval
+→ Memory-aware Chat → Evidence-based Growth
 ```
 
-Demo 只使用固定合成用户和虚构数据。页面必须显示：
+当前优先级不是继续扩展功能，而是修复 Growth 生产稳定性，并维持数据清理、
+隐私边界和可复现验证。
 
-> Demo only. Do not enter sensitive personal information.
+## 生产入口
 
-## 当前事实
+| 入口 | 地址 | 当前状态 |
+| --- | --- | --- |
+| Web | `https://www.dayfold.com.cn` | HTTP 200 |
+| API | `https://dayfold-api-global.vercel.app` | 已部署 |
+| Health | `https://dayfold-api-global.vercel.app/health` | HTTP 200 |
+| Demo contract | `https://dayfold-api-global.vercel.app/v1/demo` | HTTP 200 |
 
-- 现有 FastAPI 提供健康检查和 CloudBase Auth 状态探针。
-- Demo Mode 基础契约已实现，默认关闭，通过 `DAYFOLD_DEMO_MODE=true` 启用。
-- Demo Mode 使用固定合成用户，不开放真实用户注册。
-- Today Entry 已实现创建、列表、读取、按版本编辑和软删除。
-- Today Entry 当前使用 SQLite Repository 完成本地真实持久化和租户隔离。
-- Chat 已实现会话创建、多轮消息持久化和方舟 SSE 流式回复。
-- Memory Extraction 已支持 Entry 和用户 Chat Message 来源，输出只允许 Event、
-  Interest、Goal，并在校验后原子保存 Memory 与来源关系。
-- Active Memory Embedding 与租户内 Vector Retrieval 已完成代码和本地契约测试。
-- Chat 已自动同步 Active Memory Embedding、执行租户内检索并注入相关上下文。
-- “最近的你”已基于当前用户 Active Memory 和不同来源生成，并保存证据关系。
-- Memory Control 已支持查看、来源追踪、Disable 和确定性删除。
-- Web 已升级为可交互 Portfolio Demo，串联 Today、Chat、Memory 和 Growth。
-- 数据连接层已支持本地 SQLite 与远程 Turso，线上不会依赖容器临时文件。
-- 现有生产级 Auth 工作保留但不再是 Portfolio MVP 的前置条件。
+部署架构：
 
-## Critical Path
+- Web：Vercel 静态 HTML/CSS/JavaScript。
+- API：Vercel FastAPI，区域固定为 `hkg1`，函数上限 `180s`。
+- 数据库：生产 Turso，本地 SQLite。
+- AI：火山方舟；Chat 使用 Agent Plan，Memory/Growth 使用标准推理 Endpoint。
 
-1. Foundation
-2. Today CRUD
-3. LLM Chat with streaming
-4. Event / Interest / Goal extraction
-5. Embedding and vector retrieval
-6. Memory-aware recall
-7. Evidence-based “最近的你”
-8. Visual polish and mobile states
-9. Online deployment and end-to-end demo validation
+`/health` 当前返回的 `environment: preview` 与 `version: p1-probe` 是早期探针遗留
+命名，不代表当前发布阶段，后续应单独修正。
 
-## 当前任务
+## 模块状态
 
-Task 1 已完成：Demo Mode 基础契约。
+| 模块 | 状态 | 已验证能力 |
+| --- | --- | --- |
+| Demo Mode | 可用 | 固定合成用户、隐私提示、默认关闭 |
+| Today | 可用 | Entry 创建、列表、读取、版本编辑、软删除 |
+| Chat | 可用 | 多轮持久化、SSE、相关 Memory 注入 |
+| Memory Extraction | 可用 | Event/Interest/Goal、来源绑定、顺序重试幂等 |
+| Embedding | 可用 | 1024 维向量、Active Memory 同步 |
+| Retrieval | 可用 | `user_id` 绑定、cosine 排序、阈值 `0.30` |
+| Memory Control | 可用 | 查看来源、Disable、确定性 Delete |
+| Growth | 代码完成，生产阻断 | 证据门槛和持久化已实现；Provider 生产请求持续 `504` |
+| Auth | 非公开主路径 | 代码和 Preview 验证保留；公开站点仍为合成 Demo User |
 
-Task 2 已完成：Today Entry 数据库 Schema、Repository 和 CRUD API。
+## 当前验证基线
 
-Task 3 已完成：真实 LLM 多轮 Chat 与 SSE Streaming。
+本轮重新执行：
 
-Task 4 已完成：从 Entry 和 Chat Message 提取 Event、Interest、Goal，
-完成严格校验、来源绑定和持久化。
+```text
+API tests: 110 passed
+Python compileall: passed
+git diff --check: passed
+```
 
-Task 5 代码已完成：为 Active Memory 生成 Embedding，并按租户、状态、模型和维度
-执行精确 cosine retrieval。
+已有生产证据：
 
-真实在线验证已完成：标准方舟接口生成两条 1024 维向量，检索结果按 cosine score
-降序返回，与职业方向相关的 Goal 排名第一。
+- Web、`/health`、`/v1/demo` 可访问。
+- Today、Memory Extraction、Embedding、Vector Retrieval、Recall 已完成真实链路
+  验证。
+- Memory Extraction 同一来源重试返回相同 Memory ID，不重复写入。
+- 测试 Entry 与 Memory 在验收后均执行清理。
 
-Task 6 已完成：Chat 在生成前自动检索相关 Active Memory，组装可追溯上下文。
-真实 Vertical Slice 已验证日记生成 Goal、向量召回和 AI 回忆过去职业方向。
+历史文件中出现的 `107 passed`、`108 passed` 是当时快照；当前基线统一为
+`110 passed`。
 
-Task 7 已完成：基于真实历史 Memory 与来源生成“最近的你”；证据不足时返回
-“正在积累你的记录。”，不调用模型。
+## 当前阻断：Growth Provider
 
-Memory Control 已完成：Disable 立即移除向量；Delete 清理来源、Embedding 和失效的
-Growth 引用，所有操作强制绑定当前用户。
+已确认事实：
 
-Step 8 已完成并按参考风格修订：Web 统一为 Preview 同源的蓝色横线纸、手写字体和
-单列轻量界面，移除侧栏、卡片与厚重视觉层；桌面与移动端 Loading/Error 状态、
-SSE 流式显示、Memory 控制和 Growth 证据展示均已接入真实 API。
+1. 相同标准方舟 Key、模型和完整 Growth Prompt 在本机连续 5/5 成功，耗时
+   8.7–18.6 秒。
+2. 生产环境使用两次非流式请求时连续 10/10 返回 `504 LLM_TIMEOUT`，每次约
+   22.3 秒。
+3. 增加第三次重试后仍连续 10/10 返回 `504`，只把失败时间延长到约 33.4 秒；
+   该改动已撤销。
+4. 提交 `3c47abd` 已将 Growth 改为 `stream=true` 并部署成功，但生产隔离验证
+   仍 3/3 返回 `504`，每次约 22.3 秒。
+5. 流式请求没有收到可用 SSE 首包，说明问题发生在应用聚合响应之前。
+6. 最新生产测试的合成 Memory 已全部删除，标记残留为 0，Growth 回到
+   `collecting`。
 
-Step 9 持久化边界已完成并通过真实远程验证：线上必须显式配置
-`DAYFOLD_DATA_BACKEND=turso`、`TURSO_DATABASE_URL` 和 `TURSO_AUTH_TOKEN`；
-凭证缺失时不会回退本地 SQLite。独立连接持久化验证脚本已加入。
+当前结论：
 
-远程 Turso Portfolio Demo 数据库已创建；URL 和 Token 仅保存于 macOS 钥匙串。
-真实 smoke test 已完成跨连接写入、读取和清理，结果为 `passed`。
+- Growth 的业务规则、证据查询和流式协议单元测试通过；当前流式版本的本机真实直连
+  尚未完成。
+- 单纯增加重试或切换 `stream=true` 均未修复 Vercel → 方舟生产链路。
+- 在获得新的根因证据前，不应把 Growth 标记为生产可用。
 
-CloudBase Run API 已部署至 `dayfold-api-probe`，线上版本 `005` 承载 `100%`
-流量。Turso、Ark、Demo Mode 和 CORS 共 10 个环境变量仅在服务端配置并掩码显示。
+## 最近关键提交
 
-在线持久性验证已完成：版本 `004` 创建合成 Entry，重新部署并切换到版本 `005`
-后仍以同一 ID 读取成功；测试记录随后已软删除并确认返回 `404`。
+| Commit | 说明 | 当前结论 |
+| --- | --- | --- |
+| `61805d2` | Memory Extraction 中文错误与幂等重试 | 保留 |
+| `388d87c` | Memory 对瞬时方舟失败增加第三次尝试 | 保留 |
+| `addef50` | Growth 第三次重试实验 | 无效 |
+| `b5bef36` | 撤销 Growth 第三次重试 | 保留 |
+| `3c47abd` | Growth 改为 `stream=true` | 已部署，生产仍 `504` |
 
-Web 已重新发布到 `https://www.dayfold.com.cn`。`https://dayfold.com.cn` 继续
-通过 HTTPS 308 跳转至 `www`；线上 `app.js` 已确认只使用
-`https://dayfold-api-global.vercel.app`，不再引用失效的 CloudBase 自定义域名。
+## 下一步
 
-CloudBase HTTP 网关已添加 `/` 路由并关联 `dayfold-api-staging`。为
-`api.dayfold.com.cn` 申请的腾讯云 SSL 证书已签发，域名所有权 TXT 验证也已通过；
-但腾讯云备案控制台确认 `dayfold.com.cn` 状态为“未备案”，CloudBase 自定义域名
-因此保持“失败”且未生成有效 CNAME。测试域名仍被访问量上限拦截，Web 已不再使用
-该 CloudBase 地址。
-
-部署决策已调整：`dayfold.com.cn` 注册于腾讯云，但现有 `www.dayfold.com.cn`
-Vercel Web 和腾讯云 DNS 保持不变；Portfolio MVP 不以 ICP 备案为前置条件。API
-迁移到独立海外平台项目，先使用平台默认 HTTPS 域名。
-
-Vercel FastAPI 独立部署适配已加入仓库根目录，包含 `app.py`、根级
-`requirements.txt` 和 `vercel.json`。适配测试及 API 全量测试通过，共
-`107 passed`；Python 编译与 `git diff --check` 通过。
-
-独立海外 API 项目 `dayfold-api-global` 已创建，Production 环境已配置 Turso、
-Ark、Demo Mode、CORS 和召回阈值等 10 项变量；敏感值由 macOS 钥匙串直接注入，
-未写入源码或命令参数。稳定默认地址为
-`https://dayfold-api-global.vercel.app`。线上 `/health`、`/v1/demo` 和
-`/v1/entries` 均返回 `200`，且 CORS 正确允许 `https://www.dayfold.com.cn`。
-
-Vercel Function 已固定到香港 `hkg1`，Function 上限为 `180s`。Memory 与 Growth
-已切换到标准方舟 OpenAI 兼容推理端点
-`/api/v3/chat/completions`，使用独立标准 Ark Key 与在线推理 Endpoint ID；
-Chat 暂时继续使用 Agent Plan。
-
-Memory、Growth 和 Chat Provider 已接入统一错误分类与有界重试：
-最多 2 次，仅 timeout、network、`429`、`5xx` 重试；auth 和 request rejected
-立即失败。单次 Provider 窗口为 `80s`，API/SSE 可区分 `LLM_TIMEOUT`、
-`LLM_RATE_LIMITED`、`LLM_AUTHENTICATION_FAILED`、`LLM_REQUEST_REJECTED`、
-`LLM_UPSTREAM_ERROR` 和 `LLM_UNAVAILABLE`。
-
-标准方舟切换后的完整线上 E2E 已通过：创建 2 条虚构 Today Entry，提取 2 条
-Memory，写入 2 个 Embedding，Recall 命中 2 条本次 Memory，Growth 以 2 条本次
-Memory 作为证据生成 `ready` 结果。验收脚本在 `finally` 中删除全部测试 Memory
-与 Entry，并确认本次创建记录残留为 0。详细诊断见
-`.claude/artifacts/fixes/agent-plan-resilience.md`。
-
-线上交互巡检发现旧版连接设置会在验证前保存错误 API Origin，导致浏览器持续显示
-`Failed to fetch`。Web 已升级 localStorage 键并清理旧值，同时改为仅在连接验证成功
-后持久化地址；回归测试覆盖该迁移。当前页面仍是固定合成用户的 Portfolio Demo，
-不包含注册、登录或真实用户数据隔离，正式账号能力仍属于 POST-MVP。
-
-下一任务：进行上线后的交互巡检与作品集交付整理；Chat 的 Agent Plan 路径继续
-保留现有错误分类和有界重试，后续可按稳定性数据决定是否迁移。
+1. 从 Vercel Runtime Logs 获取 Growth 上游响应状态、请求 ID 和方舟错误体，确认
+   `LLM_TIMEOUT` 是方舟 `5xx`、网关超时还是流读取超时。
+2. 在方舟控制台核对当前 Endpoint 的模型类型、首包延迟、区域路由和监控记录。
+3. 若同一 Endpoint 在 Vercel 链路持续失败，为 Growth 创建独立低延迟 Endpoint；
+   不再继续增加重试次数。
+4. 根因修复后执行至少 3 次隔离生产 Growth 验证，并确认测试 Memory 残留为 0。
+5. 单独修正 `/health` 的遗留环境与版本字段。
 
 ## 安全边界
 
-- API Key 仅存在于服务端环境变量。
-- 所有业务数据访问必须由服务端绑定固定 Demo User；客户端不能提交或覆盖 `user_id`。
-- Demo 只使用虚构或 seeded 数据。
-- Memory 删除和 Disable 必须确定性执行，不交给 LLM 判断。
-- Growth 必须引用真实历史来源；证据不足时返回“正在积累你的记录。”
+- 公开 Demo 只使用固定合成用户和虚构数据。
+- 所有业务查询必须绑定 `user_id`。
+- API Key 只存于服务端环境变量或 macOS 钥匙串。
+- Memory 仅允许 Event、Interest、Goal。
+- Growth 至少需要两条 Memory，且来自两个不同来源。
+- Disable Memory 时删除 Embedding；Delete 时清理来源、Embedding 和失效 Growth
+  引用。
+- 生产 Turso 凭证缺失时禁止回退到临时 SQLite。
 
-## POST-MVP BACKLOG
+## POST-MVP
 
-- 完整注册、邮件验证和密码找回
-- 多设备生命周期和完整账户中心
-- 数据导出和完整账户注销
-- 复杂后台、监控、备份恢复和 CI/CD
-- PWA、Native App、Subscription、Community、Notification
-- 多模型路由
-- Emotional、Relationship、Personality Memory
-- 完整 Life Timeline 和复杂 Themes
+- 正式公开注册、密码找回和账户中心。
+- 完整多租户公开发布与数据导出/注销。
+- 监控、告警、备份恢复和正式 CI/CD。
+- 多模型路由与自动降级。
+- PWA、Native App、Subscription、Community、Notification。
