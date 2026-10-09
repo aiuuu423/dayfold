@@ -182,18 +182,12 @@ def test_ark_growth_provider_sends_only_structured_evidence():
         captured["headers"] = request.headers
         if captured["attempts"] == 1:
             return httpx.Response(429)
-        return httpx.Response(
-            200,
-            json={
-                "choices": [
-                    {
-                        "message": {
-                            "content": "最近你开始从思考职业方向，转向尝试 AI Agent 产品评测。"
-                        }
-                    }
-                ]
-            },
+        body = (
+            'data: {"choices":[{"delta":{"content":"最近你开始从思考职业方向，"}}]}\n\n'
+            'data: {"choices":[{"delta":{"content":"转向尝试 AI Agent 产品评测。"}}]}\n\n'
+            "data: [DONE]\n\n"
         )
+        return httpx.Response(200, text=body)
 
     provider = ArkGrowthProvider(
         endpoint="https://ark.example/api/v3/chat/completions",
@@ -221,6 +215,7 @@ def test_ark_growth_provider_sends_only_structured_evidence():
     user_content = captured["payload"]["messages"][1]["content"]
     assert json.loads(user_content) == evidence
     assert captured["payload"]["temperature"] == 0
+    assert captured["payload"]["stream"] is True
     assert captured["headers"]["authorization"] == "Bearer server-secret"
     assert "x-api-key" not in captured["headers"]
     assert "anthropic-version" not in captured["headers"]

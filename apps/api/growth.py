@@ -13,7 +13,11 @@ import httpx
 from apps.api.database import database_session, initialize_schema
 from apps.api.entries import utc_now
 from apps.api.memory import MEMORY_SCHEMA
-from apps.api.provider_resilience import ProviderRequestError, bounded_post
+from apps.api.provider_resilience import (
+    ProviderRequestError,
+    bounded_stream,
+    classify_transport_error,
+)
 
 
 GROWTH_SCHEMA = """
@@ -289,6 +293,7 @@ class ArkGrowthProvider:
             "model": self._model,
             "max_tokens": 220,
             "temperature": 0,
+            "stream": True,
             "messages": [
                 {
                     "role": "system",
@@ -309,7 +314,7 @@ class ArkGrowthProvider:
                 transport=self._transport,
                 timeout=httpx.Timeout(80.0, connect=10.0),
             ) as client:
-                response = await bounded_post(
+                response = await bounded_stream(
                     client,
                     self._endpoint,
                     headers={
@@ -318,13 +323,42 @@ class ArkGrowthProvider:
                     },
                     json=payload,
                 )
-            data = response.json()
-            content = data["choices"][0]["message"]["content"]
-            return validate_growth_content(content)
+                chunks: list[str] = []
+                try:
+                    async for line in response.aiter_lines():
+                        chunk = self._parse_sse_line(line)
+                        if chunk:
+                            chunks.append(chunk)
+                finally:
+                    await response.aclose()
+            return validate_growth_content("".join(chunks))
         except ProviderRequestError as error:
             raise GrowthProviderUnavailable(
                 error.kind,
                 status_code=error.status_code,
             ) from error
-        except (KeyError, TypeError) as error:
+        except httpx.RequestError as error:
+            failure = classify_transport_error(error)
+            raise GrowthProviderUnavailable(
+                failure.kind,
+                status_code=failure.status_code,
+            ) from error
+        except (ValueError, KeyError, TypeError) as error:
             raise GrowthProviderUnavailable("upstream") from error
+
+    @staticmethod
+    def _parse_sse_line(line: str) -> str | None:
+        if not line.startswith("data:"):
+            return None
+        raw_data = line.removeprefix("data:").strip()
+        if not raw_data or raw_data == "[DONE]":
+            return None
+        payload: dict[str, Any] = json.loads(raw_data)
+        choices = payload.get("choices")
+        if not isinstance(choices, list) or not choices:
+            return None
+        delta = choices[0].get("delta")
+        if not isinstance(delta, dict):
+            return None
+        content = delta.get("content")
+        return content if isinstance(content, str) else None
