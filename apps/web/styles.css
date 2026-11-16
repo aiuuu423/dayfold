@@ -8,8 +8,8 @@
   --wash: rgb(234 247 253 / 62%);
   --error: #8a3f39;
   color-scheme: light;
-  font-family: "HanziPen SC", "HanziPen TC", "Bradley Hand", "Klee", "PingFang SC",
-    sans-serif;
+  font-family: "Dayfold Hand", "HanziPen SC", "HanziPen TC", "Bradley Hand",
+    "Klee", "PingFang SC", sans-serif;
   background: var(--canvas);
   color: var(--ink);
 }

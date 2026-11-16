@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -120,6 +121,29 @@ def test_static_portfolio_app_contains_core_product_surfaces():
     assert "sidebar" not in html
     assert "prefers-reduced-motion" in stylesheet
     assert vercel_config["cleanUrls"] is True
+
+
+def test_web_self_hosts_chinese_handwriting_font():
+    html = (WEB_ROOT / "index.html").read_text(encoding="utf-8")
+    stylesheet = (WEB_ROOT / "styles.css").read_text(encoding="utf-8")
+    font_root = WEB_ROOT / "assets" / "fonts"
+    font_stylesheet = font_root / "dayfold-hand.css"
+    license_file = font_root / "OFL.txt"
+
+    assert './assets/fonts/dayfold-hand.css' in html
+    assert '"Dayfold Hand"' in stylesheet
+    assert font_stylesheet.is_file()
+    assert license_file.is_file()
+
+    font_css = font_stylesheet.read_text(encoding="utf-8")
+    assert "@font-face" in font_css
+    assert "font-display: swap" in font_css
+    assert "http://" not in font_css
+    assert "https://" not in font_css
+
+    font_urls = re.findall(r"url\(['\"]?([^'\")]+)", font_css)
+    assert font_urls
+    assert all((font_root / font_url).is_file() for font_url in font_urls)
 
 
 def test_web_ignores_legacy_api_origin_and_only_persists_verified_origin():
