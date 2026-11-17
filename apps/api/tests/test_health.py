@@ -154,6 +154,18 @@ def test_web_exposes_private_local_hanzipen_probe():
     assert "document.fonts" in probe_js
     assert "getImageData" in probe_js
     assert "navigator.userAgent" in probe_js
+    probe_loop = probe_js.split("for (const probe of PROBES)", 1)[1].split(
+        'document.querySelector("#result-summary")',
+        1,
+    )[0]
+    assert "try {" in probe_loop
+    assert "catch (error)" in probe_loop
+    assert "results.push(result)" in probe_loop
+    assert "run().catch((error)" in probe_js
+    assert 'document.querySelector("#result-summary")' in probe_js.split(
+        "run().catch((error)",
+        1,
+    )[1]
     assert "fetch(" not in probe_js
     assert "sendBeacon" not in probe_js
     assert "localStorage" not in probe_js

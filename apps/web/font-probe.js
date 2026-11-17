@@ -9,6 +9,10 @@ function normalizeFamily(value) {
   return value.replaceAll('"', "").replaceAll("'", "");
 }
 
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function renderSignature(family) {
   const canvas = document.createElement("canvas");
   canvas.width = 900;
@@ -77,6 +81,10 @@ function renderResult(result) {
 
   status.textContent = result.pass ? "PASS" : "FAIL";
   status.dataset.status = result.pass ? "pass" : "fail";
+  if (result.error) {
+    detail.textContent = `error=${result.error}`;
+    return;
+  }
   detail.textContent =
     `loaded=${result.loaded}; check=${result.fontCheck}; ` +
     `width=${result.candidate.width}; fallback=${result.fallback.width}`;
@@ -87,20 +95,37 @@ async function run() {
   const results = [];
 
   for (const probe of PROBES) {
-    const result = await evaluateProbe(probe);
+    let result;
+    try {
+      result = await evaluateProbe(probe);
+      renderResult(result);
+    } catch (error) {
+      result = { ...probe, pass: false, error: errorMessage(error) };
+      try {
+        renderResult(result);
+      } catch {
+        // The summary still records the failure if this probe's DOM is unavailable.
+      }
+    }
     results.push(result);
-    renderResult(result);
   }
 
   document.querySelector("#result-summary").textContent = [
     navigator.userAgent,
     ...results.map(
       (result) =>
-        `${result.localName}: ${result.pass ? "PASS" : "FAIL"} ` +
-        `(loaded=${result.loaded}, check=${result.fontCheck}, ` +
-        `width=${result.candidate.width}, fallback=${result.fallback.width})`
+        result.error
+          ? `${result.localName}: FAIL (error=${result.error})`
+          : `${result.localName}: ${result.pass ? "PASS" : "FAIL"} ` +
+            `(loaded=${result.loaded}, check=${result.fontCheck}, ` +
+            `width=${result.candidate.width}, fallback=${result.fallback.width})`
     ),
   ].join("\n");
 }
 
-run();
+run().catch((error) => {
+  const summary = document.querySelector("#result-summary");
+  if (summary) {
+    summary.textContent = `字体探针失败: ${errorMessage(error)}`;
+  }
+});
