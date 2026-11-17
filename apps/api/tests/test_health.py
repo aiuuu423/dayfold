@@ -192,6 +192,28 @@ console.log(errorMessage({{ toString: () => "" }}));
     assert probe_js.count('Object.hasOwn(result, "error")') == 2
 
 
+def test_web_probe_handles_errors_that_cannot_be_read_or_stringified():
+    probe_js = (WEB_ROOT / "font-probe.js").read_text(encoding="utf-8")
+    error_helpers = probe_js.split("function renderSignature", 1)[0]
+    node_script = f"""
+{error_helpers}
+const unreadableError = new Error("hidden");
+Object.defineProperty(unreadableError, "message", {{
+  get: () => {{ throw new Error("message access failed"); }},
+}});
+console.log(errorMessage(unreadableError));
+console.log(errorMessage(Object.create(null)));
+"""
+    result = subprocess.run(
+        ["node", "-e", node_script],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout.splitlines() == ["Unknown error"] * 2
+
+
 def test_web_ignores_legacy_api_origin_and_only_persists_verified_origin():
     javascript = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
     bootstrap = javascript.split("function formatDate", 1)[0]

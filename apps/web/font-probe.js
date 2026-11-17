@@ -10,8 +10,12 @@ function normalizeFamily(value) {
 }
 
 function errorMessage(error) {
-  const message = error instanceof Error ? error.message : String(error);
-  return message || "Unknown error";
+  try {
+    const message = error instanceof Error ? error.message : String(error);
+    return message || "Unknown error";
+  } catch {
+    return "Unknown error";
+  }
 }
 
 function renderSignature(family) {
