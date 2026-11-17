@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Dayfold iOS Font Probe</title>
+    <link rel="stylesheet" href="./font-probe.css">
+    <script src="./font-probe.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Dayfold diagnostic</p>
+        <h1>iOS HanziPen Probe</h1>
+        <p>
+          此页面只在当前浏览器检测本地字体，不上传或保存结果。
+        </p>
+        <p id="environment" class="environment"></p>
+      </header>
+
+      <section class="probe-list" aria-labelledby="results-title">
+        <h2 id="results-title">检测结果</h2>
+
+        <article class="probe" data-probe="family">
+          <div class="probe-head">
+            <h3>HanziPen SC</h3>
+            <strong data-status>检测中</strong>
+          </div>
+          <p class="sample probe-family">写下今天。Dayfold remembers.</p>
+          <p data-detail class="detail"></p>
+        </article>
+
+        <article class="probe" data-probe="w3">
+          <div class="probe-head">
+            <h3>HanziPenSC-W3</h3>
+            <strong data-status>检测中</strong>
+          </div>
+          <p class="sample probe-w3">写下今天。Dayfold remembers.</p>
+          <p data-detail class="detail"></p>
+        </article>
+
+        <article class="probe" data-probe="w5">
+          <div class="probe-head">
+            <h3>HanziPenSC-W5</h3>
+            <strong data-status>检测中</strong>
+          </div>
+          <p class="sample probe-w5">写下今天。Dayfold remembers.</p>
+          <p data-detail class="detail"></p>
+        </article>
+      </section>
+
+      <section aria-labelledby="summary-title">
+        <h2 id="summary-title">可复制结果</h2>
+        <pre id="result-summary" aria-live="polite">正在检测……</pre>
+      </section>
+    </main>
+  </body>
+</html>

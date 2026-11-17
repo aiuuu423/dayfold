@@ -1,0 +1,116 @@
+@font-face {
+  font-family: "Probe HanziPen Family";
+  src: local("HanziPen SC");
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Probe HanziPen W3";
+  src: local("HanziPenSC-W3");
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Probe HanziPen W5";
+  src: local("HanziPenSC-W5");
+  font-style: normal;
+  font-weight: 400;
+}
+
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
+  background: #c7e8f8;
+  color: #17191b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 31px,
+      rgb(65 111 135 / 8%) 32px
+    ),
+    #c7e8f8;
+}
+
+main {
+  width: min(100% - 28px, 720px);
+  margin: 0 auto;
+  padding: 32px 0;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+.eyebrow,
+.environment,
+.detail {
+  color: #526774;
+  font-size: 0.78rem;
+}
+
+.probe-list {
+  margin-top: 36px;
+}
+
+.probe {
+  padding: 22px 0;
+  border-top: 1px solid #9fc4d7;
+}
+
+.probe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.probe [data-status="pass"] {
+  color: #316e5b;
+}
+
+.probe [data-status="fail"] {
+  color: #8a3f39;
+}
+
+.sample {
+  min-height: 58px;
+  margin-bottom: 8px;
+  font-size: 1.75rem;
+  line-height: 1.45;
+}
+
+.probe-family {
+  font-family: "Probe HanziPen Family", monospace;
+}
+
+.probe-w3 {
+  font-family: "Probe HanziPen W3", monospace;
+}
+
+.probe-w5 {
+  font-family: "Probe HanziPen W5", monospace;
+}
+
+pre {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  border-top: 1px solid #416f87;
+  padding-top: 14px;
+  font: 0.78rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+}

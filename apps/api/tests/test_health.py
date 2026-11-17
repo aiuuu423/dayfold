@@ -136,6 +136,30 @@ def test_web_preserves_original_hanzipen_typography_without_webfont_override():
     assert not font_root.exists()
 
 
+def test_web_exposes_private_local_hanzipen_probe():
+    product_html = (WEB_ROOT / "index.html").read_text(encoding="utf-8")
+    probe_html = (WEB_ROOT / "font-probe.html").read_text(encoding="utf-8")
+    probe_css = (WEB_ROOT / "font-probe.css").read_text(encoding="utf-8")
+    probe_js = (WEB_ROOT / "font-probe.js").read_text(encoding="utf-8")
+
+    assert "font-probe" not in product_html
+    assert '<link rel="stylesheet" href="./font-probe.css">' in probe_html
+    assert '<script src="./font-probe.js" defer></script>' in probe_html
+    assert "<style" not in probe_html
+    assert "<script>" not in probe_html
+
+    for local_name in ("HanziPen SC", "HanziPenSC-W3", "HanziPenSC-W5"):
+        assert f'local("{local_name}")' in probe_css
+
+    assert "document.fonts" in probe_js
+    assert "getImageData" in probe_js
+    assert "navigator.userAgent" in probe_js
+    assert "fetch(" not in probe_js
+    assert "sendBeacon" not in probe_js
+    assert "localStorage" not in probe_js
+    assert "sessionStorage" not in probe_js
+
+
 def test_web_ignores_legacy_api_origin_and_only_persists_verified_origin():
     javascript = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
     bootstrap = javascript.split("function formatDate", 1)[0]
