@@ -11,7 +11,9 @@ function normalizeFamily(value) {
 
 function errorMessage(error) {
   try {
-    const message = error instanceof Error ? error.message : String(error);
+    const value = error instanceof Error ? error.message : error;
+    const message =
+      value === null || value === undefined ? "" : String(value);
     return message || "Unknown error";
   } catch {
     return "Unknown error";

@@ -179,6 +179,8 @@ def test_web_probe_normalizes_empty_errors_and_branches_on_error_presence():
 {error_helpers}
 console.log(errorMessage(new Error()));
 console.log(errorMessage(""));
+console.log(errorMessage(null));
+console.log(errorMessage(undefined));
 console.log(errorMessage({{ toString: () => "" }}));
 """
     result = subprocess.run(
@@ -188,7 +190,7 @@ console.log(errorMessage({{ toString: () => "" }}));
         text=True,
     )
 
-    assert result.stdout.splitlines() == ["Unknown error"] * 3
+    assert result.stdout.splitlines() == ["Unknown error"] * 5
     assert probe_js.count('Object.hasOwn(result, "error")') == 2
 
 
@@ -197,10 +199,16 @@ def test_web_probe_handles_errors_that_cannot_be_read_or_stringified():
     error_helpers = probe_js.split("function renderSignature", 1)[0]
     node_script = f"""
 {error_helpers}
+const symbolMessageError = new Error("hidden");
+symbolMessageError.message = Symbol("probe failed");
+const unstringifiableMessageError = new Error("hidden");
+unstringifiableMessageError.message = Object.create(null);
 const unreadableError = new Error("hidden");
 Object.defineProperty(unreadableError, "message", {{
   get: () => {{ throw new Error("message access failed"); }},
 }});
+console.log(`${{errorMessage(symbolMessageError)}}`);
+console.log(errorMessage(unstringifiableMessageError));
 console.log(errorMessage(unreadableError));
 console.log(errorMessage(Object.create(null)));
 """
@@ -211,7 +219,12 @@ console.log(errorMessage(Object.create(null)));
         text=True,
     )
 
-    assert result.stdout.splitlines() == ["Unknown error"] * 2
+    assert result.stdout.splitlines() == [
+        "Symbol(probe failed)",
+        "Unknown error",
+        "Unknown error",
+        "Unknown error",
+    ]
 
 
 def test_web_ignores_legacy_api_origin_and_only_persists_verified_origin():
