@@ -172,6 +172,26 @@ def test_web_exposes_private_local_hanzipen_probe():
     assert "sessionStorage" not in probe_js
 
 
+def test_web_probe_normalizes_empty_errors_and_branches_on_error_presence():
+    probe_js = (WEB_ROOT / "font-probe.js").read_text(encoding="utf-8")
+    error_helpers = probe_js.split("function renderSignature", 1)[0]
+    node_script = f"""
+{error_helpers}
+console.log(errorMessage(new Error()));
+console.log(errorMessage(""));
+console.log(errorMessage({{ toString: () => "" }}));
+"""
+    result = subprocess.run(
+        ["node", "-e", node_script],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout.splitlines() == ["Unknown error"] * 3
+    assert probe_js.count('Object.hasOwn(result, "error")') == 2
+
+
 def test_web_ignores_legacy_api_origin_and_only_persists_verified_origin():
     javascript = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
     bootstrap = javascript.split("function formatDate", 1)[0]

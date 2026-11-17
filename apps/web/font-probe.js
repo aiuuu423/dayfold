@@ -10,7 +10,8 @@ function normalizeFamily(value) {
 }
 
 function errorMessage(error) {
-  return error instanceof Error ? error.message : String(error);
+  const message = error instanceof Error ? error.message : String(error);
+  return message || "Unknown error";
 }
 
 function renderSignature(family) {
@@ -81,7 +82,7 @@ function renderResult(result) {
 
   status.textContent = result.pass ? "PASS" : "FAIL";
   status.dataset.status = result.pass ? "pass" : "fail";
-  if (result.error) {
+  if (Object.hasOwn(result, "error")) {
     detail.textContent = `error=${result.error}`;
     return;
   }
@@ -114,7 +115,7 @@ async function run() {
     navigator.userAgent,
     ...results.map(
       (result) =>
-        result.error
+        Object.hasOwn(result, "error")
           ? `${result.localName}: FAIL (error=${result.error})`
           : `${result.localName}: ${result.pass ? "PASS" : "FAIL"} ` +
             `(loaded=${result.loaded}, check=${result.fontCheck}, ` +
